@@ -1,0 +1,9 @@
+email_settings:
+  smtp_server: 
+  smtp_port: 
+  email_address: 
+  email_password: 
+  use_ssl: true
+
+mongodb_settings:
+  uri: 
