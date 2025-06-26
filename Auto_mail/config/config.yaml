@@ -1,9 +1,12 @@
 email_settings:
   smtp_server: 
-  smtp_port: 
+  smtp_port: 465
   email_address: 
   email_password: 
   use_ssl: true
 
 mongodb_settings:
   uri: 
+
+telegram_settings:
+  token: ""
