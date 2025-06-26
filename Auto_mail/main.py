@@ -60,11 +60,29 @@ def generate_financial_report_html(
     
     grouped_result: Dict[str, List[Dict[str, Any]]] = {}
     for company in companies:
+        
+        created_at_values = client.get_distinct(
+            db_name=db_name,
+            collection_name=collection_name,
+            field="created_at",
+            filter_dict={"company": company}
+        )
+        
+        if not created_at_values:
+            grouped_result[company] = []
+            continue
+        
+        latest_created_at = max(created_at_values)
+        
         data = client.query_by_fields(
             db_name=db_name,
             collection_name=collection_name,
-            filter_dict={"company": company},
-            fields=["title", "quarter", "analysis"]
+            filter_dict={
+                "company": company,
+                "created_at": latest_created_at
+                },
+            fields=["title", "quarter", "analysis","created_at"],
+            sort_by=("quarter", 1)  # 按季度和標題排序
         )
         grouped_result[company] = data
         
@@ -119,7 +137,7 @@ if __name__ == "__main__":
                 # "yufang09190919@gmail.com",
                 # "petercy32@gmail.com",
             ],
-            subject='📎 整合報表寄送（含公司分析與 Tableau）',
+            subject='📎 整合報表寄送',
             content_text='你好，這是自動化報表通知，請參考下方內容與附件資料。',
             attachment_files=None,
             attachments_dir=attachments_folder,

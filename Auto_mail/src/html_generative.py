@@ -1,5 +1,6 @@
 from typing import List, Tuple
 def generate_combined_html(tableau_links: List[Tuple[str, str]], grouped_result: dict, class_map: dict = None) -> str:
+    
     tableau_section = generate_tableau_html_body(tableau_links)
     report_section = generate_html_report(grouped_result, class_map=class_map)
 
@@ -16,6 +17,9 @@ def generate_combined_html(tableau_links: List[Tuple[str, str]], grouped_result:
     return full_html
 
 def generate_tableau_html_body(dashboard_links: List[Tuple[str, str]], title: str = "📊 Tableau Dashboard 報表清單") -> str:
+    if dashboard_links == []:
+        return "<p>沒有可用的 Tableau Dashboard 連結。</p>"
+    
     html_body = f"""
     <h2>{title}</h2>
     <table border="1" cellpadding="8" cellspacing="0" style="border-collapse: collapse;">
