@@ -2,7 +2,7 @@ import pymongo
 from pymongo.server_api import ServerApi
 from pymongo.database import Database
 from pymongo.collection import Collection
-from typing import List, Dict, Optional, Union, Any, Set
+from typing import List, Dict, Optional, Union, Any, Set, Tuple
 from .logger import Logger
 
 
@@ -209,7 +209,9 @@ class MongoDBClient:
                        filter_dict: Optional[Dict[str, Any]] = None, 
                        fields: Optional[List[str]] = None, 
                        group_by: Optional[str] = None, 
-                       limit: int = 0) -> Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
+                       sort_by: Optional[Tuple[str, int]] = None,
+                       limit: int = 0,
+                       where_conditions: Optional[Dict[str, Any]] = None) -> Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
         """
         通用查詢方法，可根據條件查詢欄位，並選擇是否群組結果。
         
@@ -218,6 +220,7 @@ class MongoDBClient:
         :param filter_dict: 查詢條件（如 {"company": "Netmarble"}）
         :param fields: 欲取回欄位（如 ["title", "quarter", "analysis"]），None 則回傳全部
         :param group_by: 若指定欄位（如 "company"），則回傳 {group_key: [doc...]}
+        :param sort_by: 排序依據，格式為 (欄位, 順序)，例如 ("created_at", -1)
         :param limit: 限制筆數，預設 0 表示全部
         :return: 文檔列表或依群組分類的文檔字典
         """
@@ -226,6 +229,8 @@ class MongoDBClient:
             query_info += f", 條件: {filter_dict}"
         if fields:
             query_info += f", 欄位: {fields}"
+        if sort_by:
+            query_info += f", 排序: {sort_by}"
         if group_by:
             query_info += f", 分組依據: {group_by}"
         if limit:
@@ -251,15 +256,21 @@ class MongoDBClient:
                 
             collection = self.get_collection(db_name, collection_name)
             
-            if filter_dict is None:
-                filter_dict = {}
-
+            query = {}
+            if filter_dict:
+                query.update(filter_dict)
+            if where_conditions:
+                query.update(where_conditions)
+                
             projection = None
             if fields:
                 projection = {field: 1 for field in fields}
                 projection["_id"] = 0  # 通常不需要 ObjectId 可省略
-
-            cursor = collection.find(filter_dict, projection, limit=limit)
+            
+            cursor = collection.find(query, projection, limit=limit)
+            if sort_by:
+                field, order = sort_by
+                cursor = cursor.sort(field, order)
             results = list(cursor)
             self.logger.info(f"查詢成功，共取得 {len(results)} 筆資料")
 
@@ -275,7 +286,6 @@ class MongoDBClient:
 
             return results
         except ValueError:
-            # 值錯誤直接向上傳遞
             raise
         except Exception as e:
             error_msg = f"查詢執行時發生錯誤: {str(e)}"
