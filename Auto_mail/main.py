@@ -125,18 +125,11 @@ if __name__ == "__main__":
             db_name=db_name,
             collection_name=collection_name
         )
-
+        
+        email_receivers = config.get("email_receivers", {}).get("email_address", [])
         # 寄送 Email
         sender.send(
-            recipients=[
-                'm11352035@mail.ntust.edu.tw',
-                # "ccchang@mail.ntust.edu.tw", # 老師
-                # "arielhuang@igs.com.tw", # 公司
-                # "dana.wu.529@gmail.com",
-                # "cindy08150815@gmail.com",
-                # "yufang09190919@gmail.com",
-                # "petercy32@gmail.com",
-            ],
+            recipients=email_receivers,
             subject='📎 整合報表寄送',
             content_text='你好，這是自動化報表通知，請參考下方內容與附件資料。',
             attachment_files=None,
