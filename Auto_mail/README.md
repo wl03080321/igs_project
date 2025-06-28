@@ -6,11 +6,10 @@
 
 ```
 Auto_mail/
-│   main.py                    # 主要寄信程式
-│   telegram_pusher.py         # 發送 Telegram 訊息模組
+│   main.py                    # 寄信程式
+│   telegram_pusher.py         # Telegram機器人推撥程式
 │   requirements.txt           # 相依套件清單
-│   README.md                  # 專案說明文件
-│
+│   
 ├── config/
 │   └── config.yaml            # 設定檔
 │
@@ -23,10 +22,10 @@ Auto_mail/
 ├── src/                       # 實作模組與工具函式
 │   ├── __init__.py
 │   ├── emailsender.py         # 寄送 email 的核心模組
-│   ├── html1_generative.py    # 自動產生 HTML 內容
+│   ├── html1_generative.py    # 產生 HTML 內容
 │   ├── logger.py              # 記錄 log 的工具
 │   ├── mongodb_client.py      # 與 MongoDB 連線的模組
-│   └── script.py              # 執行流程邏輯（可能是自動化腳本）
+│   └── script.py              # 共通使用程式
 ```
 
 
@@ -41,8 +40,9 @@ pip install -r requirements.txt
 使用前請修改config/config.yaml連線內容
 
 1. Email 寄信者資訊
-2. MongoDB 連線資訊
-3. Telegram 機器人token
+2. Email 收信者資訊
+3. MongoDB 連線資訊
+4. Telegram 機器人token
 
 ## 使用方法
 
