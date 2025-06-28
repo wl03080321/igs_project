@@ -25,7 +25,7 @@ Auto_mail/
 │   ├── html1_generative.py    # 產生 HTML 內容
 │   ├── logger.py              # 記錄 log 的工具
 │   ├── mongodb_client.py      # 與 MongoDB 連線的模組
-│   └── script.py              # 執行流程邏輯
+│   └── script.py              # 共通使用程式
 ```
 
 
