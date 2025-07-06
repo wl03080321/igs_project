@@ -1,0 +1,21 @@
+email_settings:
+  smtp_server: 
+  smtp_port: 465
+  email_address:
+  email_password:
+  use_ssl: true
+
+email_receivers:
+  email_address: 
+    # - ccchang@mail.ntust.edu.tw
+    # - arielhuang@igs.com.tw
+    # - dana.wu.529@gmail.com
+    # - cindy08150815@gmail.com
+    # - yufang09190919@gmail.com
+    # - petercy32@gmail.com
+
+mongodb_settings:
+  uri: 
+
+telegram_settings:
+  token: 
