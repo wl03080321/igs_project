@@ -13,15 +13,12 @@ def load_dashboards_from_json(json_path: str) -> List[Tuple[str, str]]:
         Returns:
             List of (name, url) tuples
         """
-        dashboards = []
+        dashboards = {}
         try:
             with open(json_path, 'r', encoding='utf-8') as f:
                 data = json.load(f)
-                for item in data:
-                    name = item.get('name')
-                    url = item.get('url')
-                    if name and url:
-                        dashboards.append((name, url))
+                dashboards["url"] = data.get("url", "")
+                dashboards["name"] = data.get("name", "")
         except Exception as e:
             error_msg = f"Failed to load dashboards from JSON: {e}"
             raise RuntimeError(error_msg)
@@ -31,7 +28,8 @@ def generate_financial_report_html(
     tableau_json_path: str,
     client: MongoDBClient,
     db_name: str,
-    collection_name: str
+    collection_name: str,
+    quarter: str = "2025_Q1"
 ) -> str:
     """
     生成包含Tableau儀表板和MongoDB公司資料的HTML報表。
@@ -79,17 +77,23 @@ def generate_financial_report_html(
             collection_name=collection_name,
             filter_dict={
                 "company": company,
-                "created_at": latest_created_at
+                "created_at": latest_created_at,
+                "title":{"$in":["公司概況", "商業策略", "風險"]},
+                "quarter":  quarter
                 },
-            fields=["title", "quarter", "analysis","created_at"],
+            fields=["title", "analysis", "quarter","link"],
             sort_by=("quarter", 1)  # 按季度和標題排序
         )
         grouped_result[company] = data
         
+    #print(f"Grouped result: {grouped_result}")
     if dashboards is None or not dashboards:
         raise ValueError("No Tableau dashboards found in the JSON file.")
-        
-    return generate_combined_html(dashboards, grouped_result)
+    return generate_combined_html(
+            tableau_data=dashboards,
+            grouped_result=grouped_result,
+            quarter=quarter
+        )
 
 
 if __name__ == "__main__":
@@ -117,21 +121,22 @@ if __name__ == "__main__":
         # 資料參數
         db_name = "igs_project"
         collection_name = "financial_analysis"
-
+        quarter = "2025_Q1"
         # 生成 HTML 報表
         html_body = generate_financial_report_html(
             tableau_json_path=tableau_json_path,
             client=client,
             db_name=db_name,
-            collection_name=collection_name
+            collection_name=collection_name,
+            quarter=quarter
         )
         
         email_receivers = config.get("email_receivers", {}).get("email_address", [])
-        # 寄送 Email
+
         sender.send(
             recipients=email_receivers,
-            subject='📎 整合報表寄送',
-            content_text='你好，這是自動化報表通知，請參考下方內容與附件資料。',
+            subject='【AI戰情室】美國競業廠商營收報告_'+ quarter.replace("_", "年"),
+            content_text='',
             attachment_files=None,
             attachments_dir=attachments_folder,
             html_body=html_body
