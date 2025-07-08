@@ -210,8 +210,7 @@ class MongoDBClient:
                        fields: Optional[List[str]] = None, 
                        group_by: Optional[str] = None, 
                        sort_by: Optional[Tuple[str, int]] = None,
-                       limit: int = 0,
-                       where_conditions: Optional[Dict[str, Any]] = None) -> Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
+                       limit: int = 0) -> Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
         """
         通用查詢方法，可根據條件查詢欄位，並選擇是否群組結果。
         
@@ -259,8 +258,6 @@ class MongoDBClient:
             query = {}
             if filter_dict:
                 query.update(filter_dict)
-            if where_conditions:
-                query.update(where_conditions)
                 
             projection = None
             if fields:

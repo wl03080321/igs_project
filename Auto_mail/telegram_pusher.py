@@ -68,7 +68,7 @@ def get_weekly_report_data_by_category(mongodb_client: MongoDBClient):
         
         if not all_categories:
             logger.error("未找到任何類別資料")
-            return {}, None
+            return {}
             
         logger.info(f"找到 {', '.join(all_categories)} 個類別")
         
@@ -114,16 +114,12 @@ def get_weekly_report_data_by_category(mongodb_client: MongoDBClient):
             
         if not reports_by_category:
             logger.warning("所有類別都未找到有效報告")
-            return {}, None
-        
-        # 統一格式化日期為"週報"
-        formatted_date = "本週"
-        
+            return {}
         logger.info(f"已整理 {len(reports_by_category)} 個類別的週報資料")
-        return reports_by_category, formatted_date
+        return reports_by_category
     except Exception as e:
         logger.error(f"獲取週報資料時發生錯誤: {e}")
-        return {}, None
+        return {}
 
 async def push_weekly_reports(mongodb_client, config):
     try:
@@ -134,15 +130,11 @@ async def push_weekly_reports(mongodb_client, config):
         else:
             logger.info(f"找到 {len(all_topics)} 個主題設定")
 
-        reports_by_category, formatted_date = get_weekly_report_data_by_category(mongodb_client)
+        reports_by_category= get_weekly_report_data_by_category(mongodb_client)
         if not reports_by_category:
             logger.warning("未找到任何週報資料，無法進行推送")
             return False
-        
-        if not formatted_date:
-            logger.warning("無法獲取格式化日期，使用預設值")
-            formatted_date = "本週"
-            
+
         telegram_config = config.get('telegram_settings', {})
         token = telegram_config['token']
         bot = Bot(token=token)
@@ -167,9 +159,9 @@ async def push_weekly_reports(mongodb_client, config):
             
             for i, chunk in enumerate(chunks):
                 if i == 0:
-                    message = f"### {category} 市場週報 {formatted_date}\n\n"
+                    message = f"### {category} 市場週報 {chunk[0].get('date', 'N/A')}\n\n"
                 else:
-                    message = f"### {category} 市場週報 {formatted_date} (續 {i+1})\n\n"
+                    message = f"### {category} 市場週報 {chunk[0].get('date', 'N/A')} (續 {i+1})\n\n"
                 
                 # 添加此分塊的報告內容
                 for report in chunk:
