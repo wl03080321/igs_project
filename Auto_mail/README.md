@@ -19,13 +19,13 @@ Auto_mail/
 ├── html_files/
 │   └── tableau_dashboards.json # 儲存 Tableau dashboard 的 HTML 設定或元件
 │
-├── src/                       # 實作模組與工具函式
-│   ├── __init__.py
-│   ├── emailsender.py         # 寄送 email 的核心模組
-│   ├── html1_generative.py    # 產生 HTML 內容
-│   ├── logger.py              # 記錄 log 的工具
-│   ├── mongodb_client.py      # 與 MongoDB 連線的模組
-│   └── script.py              # 共通使用程式
+└── src/                       # 實作模組與工具函式
+    ├── __init__.py
+    ├── emailsender.py         # 寄送 email 的核心模組
+    ├── html1_generative.py    # 產生 HTML 內容
+    ├── logger.py              # 記錄 log 的工具
+    ├── mongodb_client.py      # 與 MongoDB 連線的模組
+    └── script.py              # 共通使用程式
 ```
 
 
