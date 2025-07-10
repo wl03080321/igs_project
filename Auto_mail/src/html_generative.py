@@ -4,13 +4,36 @@ import re
 def highlight_page_references(text):
     """檢測並高亮頁碼引用"""
     # 正規表達式匹配 (p.數字) 或 (p.數字-數字) 或包含多個頁碼的格式
-    pattern = r'[(\（]p\.\s*\d+(?:-\d+)?(?:\s*,\s*p\.\s*\d+(?:-\d+)?)*[)\）]'
+    pattern = r'[(\（](?:p\.\s*\d+(?:-\d+)?(?:\s*,\s*(?:p\.\s*)?\d+(?:-\d+)?)*)[)\）]'
     
     def replace_match(match):
         page_ref = match.group(0)
         return f"<span class='page-reference'>{page_ref}</span>"
     
     return re.sub(pattern, replace_match, text, flags=re.IGNORECASE)
+
+def highlight_keywords(text):
+    """檢測並高亮關鍵字（用**包圍的文本）"""
+    # 修改正則表達式，更精確地匹配關鍵字
+    pattern = r'\*\*([^*]+?)\*\*'
+    
+    # 先找出所有匹配項，然後從後往前替換，避免替換時影響後續匹配的位置
+    matches = list(re.finditer(pattern, text))
+    result = text
+    
+    # 從後向前替換，避免替換造成位置變化
+    for match in reversed(matches):
+        keyword = match.group(1)
+        start, end = match.span()
+        result = result[:start] + f"<span class='keyword-highlight'>{keyword}</span>" + result[end:]
+    
+    return result
+
+def process_highlights(text):
+    """依序處理關鍵字和頁碼高亮"""
+    text = highlight_keywords(text)
+    text = highlight_page_references(text)
+    return text
 
 def generate_combined_html(tableau_data: dict[Tuple[str, str]] = None, grouped_result: dict = None, class_map: dict = None, quarter: str = "") -> str:
     print(tableau_data)
@@ -101,6 +124,14 @@ def generate_html_report(grouped_result: dict, class_map: dict = None):
             border: 1px solid #1976d2;
         }
         
+        .keyword-highlight {
+            background-color: #ffeaa7;
+            color: #d35400;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: bold;
+            border: 1px solid #d35400;
+        }
     </style>
     """
     
@@ -125,7 +156,7 @@ def generate_html_report(grouped_result: dict, class_map: dict = None):
                     value = str(record.get(key, "")).replace("\n", "<br>")
                     css_class = class_map.get(key, "") if class_map else ""
                     if key == "analysis":
-                        value = highlight_page_references(value)
+                        value = process_highlights(value)
                     if css_class:
                         html += f"<td><div class='{css_class}'>{value}</div></td>"
                     else:
