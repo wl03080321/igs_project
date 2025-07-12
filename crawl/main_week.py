@@ -40,8 +40,8 @@ keyword_dict={
 
 webs = ["https://www.igamingbusiness.com/","https://cdcgaming.com/"]
 
-date_after = "2025-05-22T00:00:00"
-date_before = "2025-05-29T23:59:59"
+date_after = "2025-07-01T00:00:00"
+date_before = "2025-07-01T23:59:59"
 
 # Create directory based on date range
 start_date = datetime.datetime.strptime(date_after, "%Y-%m-%dT%H:%M:%S")

@@ -140,7 +140,7 @@ def save_to_mongodb(results):
                     '摘要': article['摘要'],
                     '標籤': article['標籤'],
                     'created_at': timestamp,
-                    'date': "20250522_20250529",
+                    'date': "20250701_20250701",
                 }
                 # Insert into MongoDB
                 try:
