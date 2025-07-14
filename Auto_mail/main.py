@@ -103,6 +103,9 @@ if __name__ == "__main__":
         attachments_folder = os.path.join(base_dir, 'attachments')
         tableau_json_path = os.path.join(base_dir, 'html_files', 'tableau_dashboards.json')
 
+        if not os.path.exists(attachments_folder):
+            os.makedirs(attachments_folder)
+            print(f"已建立附件資料夾: {attachments_folder}")
         config = load_config(config_path)
 
         # 檢查 MongoDB 與 Email 設定
