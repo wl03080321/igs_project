@@ -1,6 +1,6 @@
-# 自動寄信與Telegram機器人推撥
+# 自動寄信與Telegram機器人推播
 
-這個項目是整合資訊後，透過信封方式進行寄送，以及透過Telegram機器人進行推撥。
+這個項目是整合資訊後，透過信封方式進行寄送，以及透過Telegram機器人進行推播。
 
 ## 功能特點
 
@@ -18,7 +18,7 @@
 ```
 Auto_mail/
 │   main.py                    # 寄信程式
-│   telegram_pusher.py         # Telegram機器人推撥程式
+│   telegram_pusher.py         # Telegram機器人推播程式
 │   requirements.txt           # 相依套件清單
 │   
 ├── config/
@@ -76,6 +76,8 @@ pip install -r requirements.txt
 
 執行程式碼前請修改config/config.yaml連線內容與html_files/tableau_dashboards.json資訊
 
+config.yaml內容
+
 ```yaml
 # Email 寄信者資訊，請根據使用的信箱服務相關設定做設置，此範例中是使用Google的郵件伺服器服務
 email_settings:
@@ -106,6 +108,8 @@ telegram_settings:
 
 ```
 
+tableau_dashboards.json
+
 ```json
 // 該資訊為連結Tableau財報網址位置。程式主要使用url網址資料作為HTML導引至Tableau網站位置。
 { "name": "美國競業廠商營收報告", "url": "https://public.tableau.com/app/profile/.48571349/viz/_1_17477238159080/sheet25" }
@@ -124,13 +128,13 @@ python main.py
 # - 整理結果透過Email自動寄出信封
 ```
 
-##### 執行Telegram機器人推撥程式
+##### 執行Telegram機器人推播程式
 
 ```bash
 python telegram_pusher.py
 
 # 程式會運行
-# - 根據爬蟲資料整合主題"實體賭場"、"法規與政策"、"社交博弈"結果進行資料整理
+# - 根據爬蟲資料整合"實體賭場"、"法規與政策"、"社交博弈"等主題內容進行資料整理
 # - 按照資料庫中insight_report表內資料created_at最新資料做提取
 # - 根據主題名稱與資料庫中Telegram_topic表對應欄位"topic_relate"資料，將相同主題內容傳送至Telegram群組之主題對話
 
@@ -178,7 +182,7 @@ sender.send(
 )
 ```
 
-#### 3. 設定Telegram機器人推撥主題與群組
+#### 3. 設定Telegram機器人推播主題與群組
 ```json
 // 請依據MongoDB資料庫中insight_report表裡category標籤，做為要傳送到Telegram group的聊天位置
 // 此內容是insight_report其中一筆資料
