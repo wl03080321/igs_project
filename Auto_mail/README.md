@@ -67,7 +67,7 @@ source automail_env/bin/activate
 
 #### 步驟 2: 安裝依賴套件
 ```bash
-# 切換到 crawl 目錄
+# 切換到 Auto_mail 目錄
 cd Auto_mail
 
 # 安裝所有必要依賴
