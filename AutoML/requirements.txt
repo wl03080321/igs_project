@@ -1,0 +1,14 @@
+# 資料處理套件
+pandas
+numpy
+
+# 機器學習套件
+scikit-learn
+xgboost
+
+# 資料庫連線
+pymongo
+
+# 配置管理
+PyYAML
+

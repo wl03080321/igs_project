@@ -1,0 +1,90 @@
+# ========================================
+# AutoML 套件模組
+
+# 配置檔說明:
+# 1. 請修改 MongoDB 連線資訊
+# 2. 可調整預測季度數量 (future_quarters)
+# 3. 可調整特徵參數 (lag_periods, rolling_windows)
+# 4. 若需要做其他超參數調整，可參考官方文件
+# scikit learn: https://scikit-learn.org/stable/user_guide.html
+# XGBoost: https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.XGBRFRegressor
+# ========================================
+
+# ========================================
+# MongoDB 資料庫連線設定
+# ========================================
+mongodb:
+  # MongoDB 連線字串（請替換為實際的連線資訊）
+  connection_string: "mongodb+srv://m11309125:m11309125@cluster0.rlfhtdy.mongodb.net/"
+  
+  # 資料庫名稱（請替換為實際的資料庫名稱）
+  database_name: "igs_project"
+  
+  # 資料集合名稱（請替換為實際的資料集合名稱）
+  collection_name: "financial_revenue"
+
+# ========================================
+# 機器學習模型參數設定
+# ========================================
+model:
+  # 預測未來的季度數量
+  future_quarters: 4
+  
+  # 交叉驗證的分割數量
+  cv_splits: 3
+  
+  # 隨機種子 (確保結果可重現)
+  random_state: 42
+  
+  # 各模型參數
+  # Random Forest 參數
+  rf_n_estimators: 100 
+
+  # Gradient Boosting 參數
+  gb_n_estimators: 100
+
+  # Ridge回歸 參數
+  ridge_alpha: 1.0
+
+  # Lasso回歸 參數
+  lasso_alpha: 1.0
+
+  # SVR 參數
+  svr_kernel: "rbf"
+  svr_C: 1.0
+
+  # XGBoost 參數
+  xgb_n_estimators: 100
+
+# ========================================
+# 特徵工程設定
+# ========================================
+features:
+  # 滯後期數設定 (使用前N季的資料作為特徵)
+  lag_periods: [1, 2, 3, 4]
+  
+  # 移動平均窗口設定
+  rolling_windows: [2, 4]
+  
+  # 是否包含季節性指標 (Q1, Q2, Q3, Q4)
+  include_seasonality: true
+
+# ========================================
+# 日誌系統設定
+# ========================================
+logging:
+  # 日誌等級
+  level: "INFO"
+  
+  # 日誌檔案路徑
+  log_dir: "logs"
+  
+  # 日誌訊息格式
+  log_format: "%(asctime)s - %(levelname)s - %(message)s"
+  
+  # 是否同時輸出到控制台
+  console_output: true
+  
+  # 日誌檔案編碼
+  encoding: "utf-8"
+
