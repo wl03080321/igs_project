@@ -19,8 +19,8 @@
 ## 專案結構
 ```
 AutoML/
-│   AutoML.py          # 主程式
-│   requirements.txt           # 套件清單
+│   AutoML.py                 # 主程式
+│   requirements.txt          # 套件清單
 │   config.yaml               # 配置檔
 │   
 └── logs/                     # 執行日誌目錄
