@@ -22,7 +22,6 @@ AutoML/
 │   AutoML.py          # 主程式
 │   requirements.txt           # 套件清單
 │   config.yaml               # 配置檔
-│   README.md                 # 說明文件
 │   
 └── logs/                     # 執行日誌目錄
     └── automl_{date}.log
