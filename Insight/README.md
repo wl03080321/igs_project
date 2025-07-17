@@ -203,7 +203,7 @@ queries_zh = {
 }
 ```
 
-**3. 更新 Excel 輸出格式，修改 `config.yaml`**：
+**3. 更新 Excel 輸出，修改 `config.yaml`**：
 ```yaml
 excel_output:
   headers: ["年份_季度", "公司概況", "商業策略", "風險", "市場分析"]  # 新增市場分析欄位
