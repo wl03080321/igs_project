@@ -58,6 +58,7 @@ python --version
 
 # 建議使用虛擬環境
 python -m venv automl_env
+# 啟動虛擬環境
 # Windows
 automl_env\Scripts\activate
 # Linux/Mac
