@@ -177,18 +177,6 @@ python main.py
 
 執行日誌記錄於 `logs/YYYYMMDD.log` 檔中
 
-### 自訂分析模板
-如需新增分析內容，可編輯 `analyzers/rag_analyzer.py` 中的查詢模板：
-```python
-# 範例：新增獲利能力分析
-queries_zh = {
-    "profitability": {
-        "query": "分析公司的獲利能力，包括毛利率、營業利益率、淨利率的變化趨勢",
-        "keywords_en": "profitability, margin, ROE, ROA, gross profit"
-    }
-}
-```
-
 ## 功能擴展
 ### 新增分析類型
 **1. 修改設定檔 `config.yaml`**：
@@ -206,9 +194,12 @@ analysis_settings:
 **2. 更新分析器 `analyzers/rag_analyzer.py`**：
 ```python
 # 在 analyzers/rag_analyzer.py 中新增
-"market_analysis": {
-    "query": "分析公司的市場地位和競爭優勢",
-    "keywords_en": "market position, competitive advantage, market share"
+queries_zh = {
+    ⋯⋯
+    "market_analysis": {
+        "query": "分析公司的市場地位和競爭優勢",
+        "keywords_en": "market position, competitive advantage, market share"
+    }
 }
 ```
 
