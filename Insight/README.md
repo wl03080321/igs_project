@@ -203,6 +203,33 @@ queries_zh = {
 }
 ```
 
+**3. 更新 Excel 輸出格式，修改 `config.yaml`**：
+```yaml
+excel_output:
+  headers: ["年份_季度", "公司概況", "商業策略", "風險", "市場分析"]  # 新增市場分析欄位
+  column_widths:
+    A: 15
+    B: 70
+    C: 70
+    D: 70
+    E: 70    # 新增欄位寬度
+```
+
+### 調整 Prompt 內容
+修改 `analyzers/rag_analyzer.py` 中的 `llm_prompt`：
+```python
+# 在 enhanced_rag_process 函數中找到 llm_prompt 變數
+llm_prompt = f"""
+財報內容分析：
+{combined_context}
+
+分析任務：{query}
+
+⋯⋯
+
+# 如需針對特定分析類型調整，可在此處新增特殊指令，例如：市場分析需特別關注競爭對手和市場佔有率數據
+```
+
 ### 支援新的檔案格式
 **1. 修改檔案工具 `utils/file_utils.py`**：
 ```python
