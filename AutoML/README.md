@@ -23,7 +23,7 @@ AutoML/
 │   requirements.txt          # 套件清單
 │   config.yaml               # 配置檔
 │   
-└── logs/                     # 執行日誌目錄
+└── logs/                     # 日誌檔案夾（自動建立）
     └── automl_{date}.log
 ```
 
