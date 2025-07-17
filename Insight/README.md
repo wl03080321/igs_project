@@ -179,7 +179,7 @@ python main.py
 執行日誌記錄於 `logs/YYYYMMDD.log` 檔中
 
 ### 自訂分析模板
-如需新增或修改分析內容，可編輯 `analyzers/rag_analyzer.py` 中的查詢模板：
+如需新增分析內容，可編輯 `analyzers/rag_analyzer.py` 中的查詢模板：
 ```python
 # 範例：新增獲利能力分析
 queries_zh = {
