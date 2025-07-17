@@ -36,12 +36,10 @@ def process_highlights(text):
     return text
 
 def generate_combined_html(tableau_data: dict[Tuple[str, str]] = None, grouped_result: dict = None, class_map: dict = None, quarter: str = "") -> str:
-    print(tableau_data)
     report_section = generate_html_report(grouped_result, class_map=class_map)
     tableau_link = ""
     if tableau_data is not None and "url" in tableau_data:
         tableau_link = tableau_data["url"]
-    print("Tableau link:", tableau_link)
     quarter = quarter.replace("_", "年")
     full_html = f"""
     <html>

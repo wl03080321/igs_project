@@ -1,0 +1,158 @@
+# ========================================
+# 洞察報告模組
+
+# 配置檔說明:
+# 1. 請修改 OpenAI API 金鑰
+# 2. 請修改 MongoDB 連線資訊
+# 3. 請修改財報檔案路徑名稱
+# ========================================
+
+# ========================================
+# OpenAI API 設定
+# ========================================
+openai_settings:
+  # API key (請替換為您的 OpenAI API 金鑰)
+  api_key: "sk-proj-your-api-key-here"
+
+  # 用於文字分析的模型名稱
+  llm_model: "gpt-4.1"
+
+  # 用於 OCR 圖像識別的視覺模型名稱
+  vision_model: "gpt-4-vision-preview"
+
+  # API 請求的最大 token 數量
+  max_tokens: 1800
+
+  # 控制輸出的隨機性 (0.0-1.0，越低越確定性)
+  temperature: 0.1
+
+  # API 請求超時時間（秒）
+  timeout: 90
+
+# ========================================
+# MongoDB 資料庫連線設定
+# ========================================
+mongodb_settings:
+  # MongoDB 連線字串（請替換為實際的連線資訊）
+  uri: "mongodb+srv://<username>:<password>@cluster0.rlfhtdy.mongodb.net/"
+
+  # 資料庫名稱（請替換為實際的資料庫名稱）
+  database_name: "igs_project"
+
+  # 儲存文件向量和分塊內容的集合名稱（請替換為實際的資料集合名稱）
+  collection_name: "insight_report_embeddings"
+
+  # 儲存最終分析結果的集合名稱（請替換為實際的資料集合名稱）
+  analysis_collection_name: "financial_analysis"
+
+# ========================================
+# 檔案處理設定
+# ========================================
+file_processing:
+  # 財報檔案所在的路徑（請替換為實際的路徑名稱）
+  base_directory: "/your/path/to/financial/reports"
+
+  # 每個 PDF 檔案最多處理的頁數（避免處理時間過長）
+  max_pages_per_pdf: 50
+
+  # 支援的檔案格式
+  supported_extensions: [".pdf"]
+
+  # 財報資料夾的後綴名稱（用於自動識別財報資料夾）
+  folder_suffix: "_財報資料"
+
+# ========================================
+# OCR 處理設定
+# ========================================
+ocr_settings:
+  # OCR 批次處理的頁面數量（每次同時處理的頁面數）
+  batch_size: 2
+
+  # 單個批次的最大重試次數
+  max_retries: 2
+
+  # 圖像解析度 DPI（越高品質越好但處理越慢）
+  dpi: 300
+
+  # 轉換後的圖像格式
+  image_format: "png"
+
+  # 重試之間的延遲時間（秒）
+  retry_delay: 3
+
+# ========================================
+# 向量搜尋設定
+# ========================================
+vector_search:
+  # 用於生成文件向量的模型名稱（支援多語言）
+  embedding_model: "paraphrase-multilingual-MiniLM-L12-v2"
+
+  # 向量的維度數（此模型固定為 384 維）
+  embedding_dimensions: 384
+
+  # 第一次搜尋的結果數量限制
+  search_limit: 15
+
+  # 備用搜尋的結果數量限制（當第一次搜尋結果不足時）
+  backup_search_limit: 25
+
+  # 通用搜尋的結果數量限制（當前兩次搜尋都不足時）
+  universal_search_limit: 25
+
+  # 文件分塊的最大 token 數量（影響分析的上下文長度）
+  chunk_max_tokens: 6000
+
+  # 傳送給 AI 的最大上下文長度（字符數）
+  max_context_length: 300000
+
+# ========================================
+# 分析設定
+# ========================================
+analysis_settings:
+  # 分析的類型列表（對應程式中的分析功能）
+  analysis_types:
+    - "company_overview"    # 公司概況分析
+    - "business_strategy"   # 商業策略分析
+    - "risks"              # 風險分析
+  
+  # 分析類型的中文對應（用於資料庫儲存和 Excel 標題）
+  title_mapping:
+    company_overview: "公司概況"
+    business_strategy: "商業策略"
+    risks: "風險"
+
+# ========================================
+# 日誌設定
+# ========================================
+logging_settings:
+  # 日誌等級（DEBUG, INFO, WARNING, ERROR, CRITICAL）
+  level: "INFO"
+
+  # 日誌格式字串
+  format: "%(asctime)s - %(levelname)s: %(message)s"
+
+  # 日誌檔案儲存目錄
+  log_directory: "logs"
+
+# ========================================
+# Excel 輸出設定
+# ========================================
+excel_output:
+  # Excel 檔案的輸出目錄名稱
+  output_directory: "財報分析"
+
+  # Excel 檔案名稱的前綴
+  filename_prefix: "競業財報分析"
+
+  # Excel 表格的欄位標題
+  headers: ["年份_季度", "公司概況", "商業策略", "風險"]
+
+  # 各欄位的寬度設定（Excel 欄位字母對應寬度值）
+  column_widths:
+    A: 15    # 年份_季度欄位寬度
+    B: 70    # 公司概況欄位寬度
+    C: 70    # 商業策略欄位寬度
+    D: 70    # 風險欄位寬度
+
+  # 資料列的高度（點數單位，容納大量文字內容）
+  row_height: 200
