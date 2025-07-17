@@ -90,6 +90,27 @@ Insight/
 }
 ```
 
+## MongoDB Atlas Search 建立步驟
+1. 進入 Atlas Search 頁籤
+2. 點擊 "Create Search Index"
+3. 選擇 "Vector Search"
+4. 輸入索引名稱：vector_search
+5. 選擇資料庫：igs_project
+6. 選擇集合：insight_report_embeddings
+7. 選擇 "JSON Editor"，貼上以下 JSON 設定
+```json
+{
+  "fields": [
+    {
+      "numDimensions": 384,
+      "path": "embedding",
+      "similarity": "cosine",
+      "type": "vector"
+    }
+  ]
+}
+```
+
 ## 環境設定
 ### 步驟 1: 安裝 Python 環境
 ```bash
