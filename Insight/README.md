@@ -100,9 +100,9 @@ python --version
 # 建議使用虛擬環境
 python -m venv financial_analysis_env
 # 啟動虛擬環境
-# Windows:
+# Windows
 financial_analysis_env\Scripts\activate
-# Linux/Mac:
+# Linux/Mac
 source financial_analysis_env/bin/activate
 ```
 
