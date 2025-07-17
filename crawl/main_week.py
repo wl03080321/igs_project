@@ -43,6 +43,12 @@ webs = ["https://www.igamingbusiness.com/","https://cdcgaming.com/"]
 date_after = "2025-07-01T00:00:00"
 date_before = "2025-07-01T23:59:59"
 
+# 確保根 data 資料夾存在
+data_root = "./data"
+if not os.path.exists(data_root):
+    os.makedirs(data_root)
+    print(f"Created directory: {data_root}")
+
 # Create directory based on date range
 start_date = datetime.datetime.strptime(date_after, "%Y-%m-%dT%H:%M:%S")
 end_date = datetime.datetime.strptime(date_before, "%Y-%m-%dT%H:%M:%S")

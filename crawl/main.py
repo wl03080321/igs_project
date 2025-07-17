@@ -1,6 +1,7 @@
 import tls_requests
 import pandas as pd
 import datetime
+import os
 
 
 
@@ -56,6 +57,12 @@ company_dict={
   "Double":["Double+Down"],
 }
 webs = ["https://www.igamingbusiness.com/","https://cdcgaming.com/"]
+
+# 確保 data 資料夾存在
+data_dir = "./data"
+if not os.path.exists(data_dir):
+    os.makedirs(data_dir)
+    print(f"Created directory: {data_dir}")
 
 for classification, keywords in company_dict.items():
     search_content = []

@@ -47,6 +47,8 @@ pip install -r requirements.txt
 - google-generativeai >= 0.3.0
 - openpyxl >= 3.1.0
 - tqdm >= 4.65.0
+- pymongo >= 4.0.0
+- wrapper-tls-requests >= 1.0.0
 
 ## 環境設定
 
@@ -73,6 +75,11 @@ python main_week.py
 
 ```bash
 python analyze_files.py
+```
+### 執行每週文章分析
+
+```bash
+python analyze_files_week.py
 ```
 
 ## 輸出結果
