@@ -1,0 +1,19 @@
+# 核心依賴
+pymongo
+openai
+PyMuPDF
+PyYAML
+
+# 向量化與相似度計算
+sentence-transformers
+scikit-learn
+numpy
+
+# 資料處理
+pandas
+
+# Excel 處理
+openpyxl
+
+# 圖像處理
+Pillow
