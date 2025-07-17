@@ -191,7 +191,7 @@ queries_zh = {
 
 ## 功能擴展
 ### 新增分析類型
-1. **修改設定檔 `config.yaml`**：
+**1. 修改設定檔 `config.yaml`**：
 ```yaml
 analysis_settings:
   analysis_types:
@@ -203,7 +203,7 @@ analysis_settings:
     market_analysis: "市場分析"
 ```
 
-2. **更新分析器 `analyzers/rag_analyzer.py`**：
+**2. 更新分析器 `analyzers/rag_analyzer.py`**：
 ```python
 # 在 analyzers/rag_analyzer.py 中新增
 "market_analysis": {
@@ -213,7 +213,7 @@ analysis_settings:
 ```
 
 ### 支援新的檔案格式
-1. **修改檔案工具 `utils/file_utils.py`**：
+**1. 修改檔案工具 `utils/file_utils.py`**：
 ```python
 # 在 utils/file_utils.py 中新增
 def process_word_document(file_path):
@@ -221,7 +221,7 @@ def process_word_document(file_path):
     pass
 ```
 
-2. **更新設定 `config.yaml`**：
+**2. 更新設定 `config.yaml`**：
 ```yaml
 file_processing:
   supported_extensions: [".pdf", ".docx", ".doc"]
