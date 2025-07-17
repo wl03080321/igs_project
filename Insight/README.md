@@ -134,12 +134,12 @@ openai_settings:
 
 mongodb_settings:
   uri: "mongodb+srv://<username>:<password>@cluster0.rlfhtdy.mongodb.net/" # MongoDB連線字串  
-  database_name: "igs_project" # 資料庫名稱
-  collection_name: "insight_report_embeddings"  # 文件向量集合名稱
-  analysis_collection_name: "financial_analysis"  # 最終分析結果集合名稱
+  database_name: "igs_project"                                             # 資料庫名稱
+  collection_name: "insight_report_embeddings"                             # 文件向量集合名稱
+  analysis_collection_name: "financial_analysis"                           # 最終分析結果集合名稱
   
 file_processing:
-  base_directory: "/path/to/your/financial/reports"  # 財報檔案路徑
+  base_directory: "/path/to/your/financial/reports"                        # 財報檔案路徑
 ```
 
 ### 步驟 4: 準備財報檔案
