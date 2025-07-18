@@ -55,7 +55,7 @@ Insight/
 
 ## 資料庫結構
 ### MongoDB 集合說明
-**1. insight_report_embeddings**：儲存財報文件的分塊內容和向量表示
+**1. financial_analysis_embeddings**：儲存財報文件的分塊內容和向量表示
 ```json
 {
   "_id": ObjectId,
@@ -134,7 +134,7 @@ openai_settings:
 mongodb_settings:
   uri: "mongodb+srv://<username>:<password>@cluster0.rlfhtdy.mongodb.net/" # MongoDB連線字串  
   database_name: "igs_project"                                             # 資料庫名稱
-  collection_name: "insight_report_embeddings"                             # 文件向量集合名稱
+  collection_name: "financial_analysis_embeddings"                             # 文件向量集合名稱
   analysis_collection_name: "financial_analysis"                           # 最終分析結果集合名稱
   
 file_processing:
