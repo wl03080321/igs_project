@@ -221,7 +221,7 @@ excel_output:
 
 - **更新主程式 `main.py`**：
 ```python
-# 在 main.py 的 analyze_companies_from_database 函數中修改以下部分：
+# 在 main.py 的 analyze_companies_from_database 函數中修改以下部分
 # 為每家公司創建工作表並進行分析
 headers = settings.get("excel_output.headers", ["年份_季度", "公司概況", "商業策略", "風險", "市場分析"])          # 新增市場分析
 column_widths = settings.get("excel_output.column_widths", {"A": 15, "B": 70, "C": 70, "D": 70, "E": 70})  # 新增 E 欄
