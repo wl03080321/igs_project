@@ -40,7 +40,7 @@ mongodb_settings:
   database_name: "igs_project"
 
   # 儲存文件向量和分塊內容的集合名稱（請替換為實際的資料集合名稱）
-  collection_name: "insight_report_embeddings"
+  collection_name: "financial_analysis_embeddings"
 
   # 儲存最終分析結果的集合名稱（請替換為實際的資料集合名稱）
   analysis_collection_name: "financial_analysis"
