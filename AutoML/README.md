@@ -156,3 +156,7 @@ print('MongoDB 連線測試成功')
 2. **資料完整性**：避免歷史資料中有缺失的季度
 3. **資料最少需求**：每家公司 `8` 個季度歷史資料
 4. **建議資料量**：每家公司 `12-20` 個季度可提升預測效果
+
+## 相關技術資源
+- scikit learn: https://scikit-learn.org/stable/user_guide.html
+- XGBoost: https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.XGBRFRegressor
