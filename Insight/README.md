@@ -195,7 +195,7 @@ analysis_settings:
 ```python
 # 在 analyzers/rag_analyzer.py 中新增
 queries_zh = {
-    ⋯⋯
+    # ... 其他程式碼 ...
     "market_analysis": {
         "query": "分析公司的市場地位和競爭優勢",
         "keywords_en": "market position, competitive advantage, market share"
@@ -203,7 +203,8 @@ queries_zh = {
 }
 ```
 
-**3. 更新輸出 Excel，修改 `config.yaml`**：
+**3. 更新輸出 Excel**：
+- **修改 `config.yaml`**：
 ```yaml
 excel_output:
   headers: ["年份_季度", "公司概況", "商業策略", "風險", "市場分析"]  # 新增市場分析欄位
@@ -213,6 +214,32 @@ excel_output:
     C: 70
     D: 70
     E: 70    # 新增欄位寬度
+```
+
+- **更新主程式 `main.py`**：
+```python
+# 在 main.py 的 analyze_companies_from_database 函數中修改以下部分：
+# 為每家公司創建工作表並進行分析
+headers = settings.get("excel_output.headers", ["年份_季度", "公司概況", "商業策略", "風險", "市場分析"])  # 新增 "市場分析"
+column_widths = settings.get("excel_output.column_widths", {"A": 15, "B": 70, "C": 70, "D": 70, "E": 70})  # 新增 E 欄
+row_height = settings.get("excel_output.row_height", 200)
+
+# ... 其他程式碼 ...
+
+if analysis:
+    display_quarter = quarter.replace("_", "_")
+    
+    # 填入Excel（根據實際 headers 數量動態調整）
+    ws.cell(row=row_index, column=1).value = display_quarter
+    ws.cell(row=row_index, column=2).value = analysis["company_overview"]
+    ws.cell(row=row_index, column=3).value = analysis["business_strategy"]
+    ws.cell(row=row_index, column=4).value = analysis["risks"]
+    ws.cell(row=row_index, column=5).value = analysis["market_analysis"]  # 新增這行
+    
+    # 設定自動換行和行高（動態調整欄位範圍）
+    for col in range(1, len(headers) + 1):  # 根據 headers 數量動態調整
+        cell = ws.cell(row=row_index, column=col)
+        cell.alignment = Alignment(wrapText=True, vertical='top')
 ```
 
 ### 調整 Prompt 內容
