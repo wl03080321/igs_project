@@ -158,5 +158,5 @@ print('MongoDB 連線測試成功')
 4. **建議資料量**：每家公司 `12-20` 個季度可提升預測效果
 
 ## 相關技術資源
-- **Scikit-learn**：https://scikit-learn.org/stable/user_guide.html
-- **XGBoost**：https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.XGBRFRegressor
+- **Scikit-learn 文件**：https://scikit-learn.org/stable/user_guide.html
+- **XGBoost 文件**：https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.XGBRFRegressor
