@@ -159,4 +159,4 @@ print('MongoDB 連線測試成功')
 
 ## 相關技術資源
 - **Scikit-learn 文件**：https://scikit-learn.org/stable/user_guide.html
-- **XGBoost 文件**：https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.XGBRFRegressor
+- **XGBRegressor 文件**：https://xgboost.readthedocs.io/en/latest/python/python_api.html#xgboost.XGBRFRegressor
