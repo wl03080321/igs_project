@@ -229,14 +229,14 @@ row_height = settings.get("excel_output.row_height", 200)
 if analysis:
     display_quarter = quarter.replace("_", "_")
     
-    # 填入Excel（根據實際 headers 數量動態調整）
+    # 填入Excel
     ws.cell(row=row_index, column=1).value = display_quarter
     ws.cell(row=row_index, column=2).value = analysis["company_overview"]
     ws.cell(row=row_index, column=3).value = analysis["business_strategy"]
     ws.cell(row=row_index, column=4).value = analysis["risks"]
     ws.cell(row=row_index, column=5).value = analysis["market_analysis"]  # 新增這行
     
-    # 設定自動換行和行高（動態調整欄位範圍）
+    # 設定自動換行和行高
     for col in range(1, len(headers) + 1):  # 根據 headers 數量動態調整
         cell = ws.cell(row=row_index, column=col)
         cell.alignment = Alignment(wrapText=True, vertical='top')
