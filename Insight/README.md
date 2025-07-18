@@ -134,7 +134,7 @@ openai_settings:
 mongodb_settings:
   uri: "mongodb+srv://<username>:<password>@cluster0.rlfhtdy.mongodb.net/" # MongoDB連線字串  
   database_name: "igs_project"                                             # 資料庫名稱
-  collection_name: "financial_analysis_embeddings"                             # 文件向量集合名稱
+  collection_name: "financial_analysis_embeddings"                         # 文件向量集合名稱
   analysis_collection_name: "financial_analysis"                           # 最終分析結果集合名稱
   
 file_processing:
@@ -186,9 +186,12 @@ analysis_settings:
     - "company_overview"
     - "business_strategy"
     - "risks"
-    - "market_analysis"    # 新增
+    - "market_analysis"            # 新增
   title_mapping:
-    market_analysis: "市場分析"
+    company_overview: "公司概況"
+    business_strategy: "商業策略"
+    risks: "風險"
+    market_analysis: "市場分析"      # 新增
 ```
 
 **2. 更新分析器 `analyzers/rag_analyzer.py`**：
@@ -213,14 +216,14 @@ excel_output:
     B: 70
     C: 70
     D: 70
-    E: 70    # 新增欄位寬度
+    E: 70  # 新增欄位寬度
 ```
 
 - **更新主程式 `main.py`**：
 ```python
 # 在 main.py 的 analyze_companies_from_database 函數中修改以下部分：
 # 為每家公司創建工作表並進行分析
-headers = settings.get("excel_output.headers", ["年份_季度", "公司概況", "商業策略", "風險", "市場分析"])  # 新增 "市場分析"
+headers = settings.get("excel_output.headers", ["年份_季度", "公司概況", "商業策略", "風險", "市場分析"])          # 新增市場分析
 column_widths = settings.get("excel_output.column_widths", {"A": 15, "B": 70, "C": 70, "D": 70, "E": 70})  # 新增 E 欄
 row_height = settings.get("excel_output.row_height", 200)
 
@@ -234,7 +237,7 @@ if analysis:
     ws.cell(row=row_index, column=2).value = analysis["company_overview"]
     ws.cell(row=row_index, column=3).value = analysis["business_strategy"]
     ws.cell(row=row_index, column=4).value = analysis["risks"]
-    ws.cell(row=row_index, column=5).value = analysis["market_analysis"]  # 新增這行
+    ws.cell(row=row_index, column=5).value = analysis["market_analysis"]  # 新增
     
     # 設定自動換行和行高
     for col in range(1, len(headers) + 1):  # 根據 headers 數量動態調整
@@ -254,12 +257,8 @@ llm_prompt = f"""
 
 分析要求：
 - 按照分析任務裡的項目去撰寫內容
-- **重要1：引用數據與財報內文時必須標註頁碼，格式為 (p.X)**
-- **重要2：若找不到相關內容時使用「無明確提及」作為答案**
-- **重要3：直接輸出純文字內容**
-- **重要4：在重要的數字、金額、百分比等關鍵財務數據前後添加兩個米字號**
-- 分析應該結構化且簡明扼要、易於理解
-- 用繁體中文回答，字數控制在 300 字左右
+
+# ... 其他程式碼 ...
 
 # 如需針對特定分析類型調整，可在此處新增特殊指令
 # 例如：市場分析需特別關注競爭對手和市場佔有率數據
