@@ -1,4 +1,5 @@
 import re
+import os
 import numpy as np
 from pymongo import MongoClient
 from datetime import datetime
