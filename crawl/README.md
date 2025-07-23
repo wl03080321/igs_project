@@ -188,7 +188,6 @@ python analyze_files_week.py
 │   └── MongoDB (數據庫)
 └── 配置層
     ├── requirements.txt (依賴管理)
-    └── organize.py (數據組織)
 ```
 
 ### 環境配置教學
