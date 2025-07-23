@@ -14,12 +14,10 @@
 
 ```
 crawl/
-│   main.py              # 主要爬蟲程式
 │   main_week.py         # 每週爬蟲程式
-│   analyze_files.py     # 文章分析程式
 │   analyze_files_week.py # 每週分析程式
 │   requirements.txt     # 專案依賴
-│   search.json         # 搜尋設定
+│   search.json         # 搜尋暫存
 │
 ├── data/               # 原始資料存放目錄
 │   └── YYYY-MM-DD/     # 按日期組織的資料
@@ -38,32 +36,30 @@ crawl/
 
 ## 安裝需求
 
+
+python 3.11
+
+
 ```bash
 pip install -r requirements.txt
 ```
 
 主要依賴：
-- pandas >= 2.0.0
-- google-generativeai >= 0.3.0
-- openpyxl >= 3.1.0
-- tqdm >= 4.65.0
-- pymongo >= 4.0.0
-- wrapper-tls-requests >= 1.0.0
+- pandas 
+- openpyxl 
+- tqdm 
+- pymongo 
+- wrapper-tls-requests 
 
 ## 環境設定
 
 使用前需要設定以下環境：
 
-1. Google Gemini API 金鑰
+1. openai API 金鑰
 2. MongoDB 連線資訊
 
 ## 使用方法
 
-### 執行定期爬蟲
-
-```bash
-python main.py
-```
 
 ### 執行每週爬蟲
 
@@ -71,11 +67,6 @@ python main.py
 python main_week.py
 ```
 
-### 執行文章分析
-
-```bash
-python analyze_files.py
-```
 ### 執行每週文章分析
 
 ```bash
@@ -85,8 +76,6 @@ python analyze_files_week.py
 ## 輸出結果
 
 系統會產生以下輸出：
-- CSV 格式的分析結果（位於 analysis_results 目錄）
-- Excel 格式的整合報告（新聞分析結果.xlsx）
 - MongoDB 資料庫中的分析記錄
 
 ## 注意事項
@@ -114,7 +103,7 @@ python analyze_files_week.py
   - 法規與政策（Market Trends、Regulatory、policy）
 
 #### 2. AI 驅動的文本分析系統
-- **AI 模型**: 整合 Google Gemini 2.0 Flash 模型
+- **AI 模型**: 整合 openai 模型
 - **分析能力**: 
   - 自動摘要生成（150字內精煉摘要）
   - 關鍵事件提取
@@ -123,7 +112,7 @@ python analyze_files_week.py
 - **多語言支援**: 支援中英文混合內容處理
 
 #### 3. 數據管理與存儲
-- **資料庫**: MongoDB 分散式數據庫
+- **資料庫**: MongoDB 數據庫
 - **資料格式**: 支援 CSV、Excel、JSON 多種格式輸出
 - **數據結構**: 標準化的文章結構（標題、連結、內容、分析結果）
 - **版本控制**: 按時間戳記錄分析版本
@@ -132,15 +121,9 @@ python analyze_files_week.py
 
 #### 技術指標
 - **爬取效率**: 每分鐘可處理 100+ 篇文章
-- **分析準確度**: AI 摘要準確率達 90% 以上
-- **系統穩定性**: 連續運行 30 天無故障記錄
-- **數據覆蓋**: 涵蓋 5 大類別、200+ 關鍵字搜尋
+- **數據覆蓋**: 涵蓋 5 大類別、關鍵字搜尋
 
-#### 產出成果
-- **分析報告**: 已生成超過 50 份季度分析報告
-- **數據量**: 累積處理新聞文章 10,000+ 篇
-- **時間跨度**: 覆蓋 2023-2025 年完整時間範圍
-- **分類準確性**: 新聞分類準確率達 95%
+
 
 ### 商業價值與應用
 
@@ -172,16 +155,13 @@ python analyze_files_week.py
 ```
 新聞爬蟲與分析系統
 ├── 數據收集層
-│   ├── main.py (主要爬蟲程式)
 │   ├── main_week.py (每週爬蟲程式)
 │   └── search.json (搜尋配置)
 ├── 數據處理層
-│   ├── analyze_files.py (文章分析程式)
 │   ├── analyze_files_week.py (每週分析程式)
 │   └── parsing.py (數據解析)
 ├── 數據存儲層
 │   ├── data/ (原始數據)
-│   ├── analysis_results/ (分析結果)
 │   └── MongoDB (數據庫)
 └── 配置層
     ├── requirements.txt (依賴管理)
