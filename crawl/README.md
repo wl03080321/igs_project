@@ -194,7 +194,7 @@ python analyze_files_week.py
 
 #### 步驟 1: 安裝 Python 環境
 ```bash
-# 確保使用 Python 3.8 或以上版本
+# 確保使用 Python 3.11 或以上版本
 python --version
 
 # 建議使用虛擬環境
