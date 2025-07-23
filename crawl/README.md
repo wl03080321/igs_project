@@ -5,10 +5,10 @@
 ## 功能特點
 
 - 自動爬取多個類別的新聞文章
-- 使用 Google Gemini AI 進行文章分析
-- 支持按時間範圍（季度）進行資料收集
+- 使用 OpenAI GPT-4 進行文章分析和翻譯
+- 支持按日期範圍進行資料收集
 - 結果存儲到 MongoDB 資料庫
-- 產生分析報告和 Excel 輸出
+- 產生分析報告和 JSON 輸出
 
 ## 專案結構
 
@@ -18,27 +18,29 @@ crawl/
 │   analyze_files_week.py # 每週分析程式
 │   requirements.txt     # 專案依賴
 │   search.json         # 搜尋暫存
+│   .python-version     # Python 版本指定
 │
-├── data/               # 原始資料存放目錄
-│   └── YYYY-MM-DD/     # 按日期組織的資料
-│
-└── analysis_results/   # 分析結果輸出目錄
+└── data/               # 原始資料存放目錄
+    └── YYYYMMDD_YYYYMMDD/ # 按日期範圍組織的資料
+        ├── 實體賭場.json
+        ├── 線上博弈.json
+        ├── 社交博弈.json
+        ├── 法規與政策.json
+        └── 平台.json
 ```
 
 ## 新聞分類
 
 系統支援以下幾個主要分類的新聞爬取：
-- 市場（America/USA、UK）
 - 實體賭場（Casino）
 - 線上博弈（mobile Gambling）
 - 社交博弈（social casino）
-- 法規與政策（Market Trends、Regulatory、policy）
+- 法規與政策（Market Trends、Regulatory、policy、class action、lawsuit、state prohibition、state ban）
+- 平台（App Store、Google Play）
 
 ## 安裝需求
 
-
-python 3.11
-
+Python 3.11
 
 ```bash
 pip install -r requirements.txt
@@ -49,14 +51,27 @@ pip install -r requirements.txt
 - openpyxl 
 - tqdm 
 - pymongo 
-- wrapper-tls-requests 
+- wrapper-tls-requests
+- openai
 
 ## 環境設定
 
 使用前需要設定以下環境：
 
-1. openai API 金鑰
+1. OpenAI API 金鑰
 2. MongoDB 連線資訊
+
+### API 金鑰設定
+在 `analyze_files_week.py` 中設定您的 OpenAI API 金鑰：
+```python
+OPENAI_API_KEY = "your_openai_api_key_here"
+```
+
+### MongoDB 設定
+在 `analyze_files_week.py` 中設定 MongoDB 連線字串：
+```python
+MONGO_URI = "mongodb+srv://username:password@cluster.mongodb.net/database"
+```
 
 ## 使用方法
 
@@ -76,7 +91,12 @@ python analyze_files_week.py
 ## 輸出結果
 
 系統會產生以下輸出：
-- MongoDB 資料庫中的分析記錄
+- 各分類的 JSON 檔案存放在 `data/日期範圍/` 目錄中
+- MongoDB 資料庫中的分析記錄（`insight_report` 集合）
+- 包含以下欄位的分析結果：
+  - 原始標題和翻譯後的繁體中文標題
+  - 150字內的繁體中文摘要
+  - 相關標籤（市場、法規、政策、集體訴訟、訴訟、州禁令）
 
 ## 注意事項
 
@@ -92,36 +112,39 @@ python analyze_files_week.py
 ### 核心技術成果
 
 #### 1. 智能爬蟲引擎
-- **目標網站**: 主要針對 IGB North America 等專業博弈新聞網站
+- **目標網站**: 主要針對 igamingbusiness.com 和 cdcgaming.com 等專業博弈新聞網站
 - **爬取策略**: 採用 WordPress REST API 進行高效率數據收集
-- **時間範圍**: 支援按季度（Q1-Q4）進行精確的時間範圍爬取
+- **時間範圍**: 支援按日期範圍進行精確的時間範圍爬取
 - **關鍵字分類**: 
-  - 市場趨勢（America/USA、UK）
   - 實體賭場（Casino）
   - 線上博弈（mobile Gambling）
   - 社交博弈（social casino）
-  - 法規與政策（Market Trends、Regulatory、policy）
+  - 法規與政策（Market Trends、Regulatory、policy、class action、lawsuit、state prohibition、state ban）
+  - 平台（App Store、Google Play）
 
 #### 2. AI 驅動的文本分析系統
-- **AI 模型**: 整合 openai 模型
+- **AI 模型**: 整合 OpenAI GPT-4 模型
 - **分析能力**: 
+  - 英文標題翻譯成繁體中文
   - 自動摘要生成（150字內精煉摘要）
-  - 關鍵事件提取
-  - 政策影響分析
-  - 市場趨勢識別
-- **多語言支援**: 支援中英文混合內容處理
+  - 智能標籤分類（市場、法規、政策、集體訴訟、訴訟、州禁令）
+  - 結構化數據輸出
+- **多語言支援**: 支援英文到繁體中文的翻譯和分析
 
 #### 3. 數據管理與存儲
-- **資料庫**: MongoDB 數據庫
-- **資料格式**: 支援 CSV、Excel、JSON 多種格式輸出
-- **數據結構**: 標準化的文章結構（標題、連結、內容、分析結果）
+- **資料庫**: MongoDB 數據庫（`igs_project.insight_report` 集合）
+- **資料格式**: 支援 JSON 格式輸出
+- **數據結構**: 標準化的文章結構（標題、連結、內容、分析結果、標籤）
 - **版本控制**: 按時間戳記錄分析版本
+- **分類存儲**: 按新聞分類分別存儲 JSON 檔案
 
 ### 研發成果統計
 
 #### 技術指標
 - **爬取效率**: 每分鐘可處理 100+ 篇文章
-- **數據覆蓋**: 涵蓋 5 大類別、關鍵字搜尋
+- **數據覆蓋**: 涵蓋 5 大類別、多個專業關鍵字搜尋
+- **分析準確性**: 使用 GPT-4 模型進行高品質文本分析
+- **數據處理**: 支援批量處理和即時分析
 
 
 
@@ -194,27 +217,16 @@ pip install -r requirements.txt
 
 #### 步驟 3: 配置 API 金鑰
 ```python
-# 在 analyze_files.py 中設定 Google Gemini API
-GOOGLE_API_KEY = "your_gemini_api_key_here"
+# 在 analyze_files_week.py 中設定 OpenAI API
+OPENAI_API_KEY = "your_openai_api_key_here"
 
 # 在相關檔案中設定 MongoDB 連線
-MONGO_URI = "mongodb://username:password@host:port/database"
+MONGO_URI = "mongodb+srv://username:password@cluster.mongodb.net/database"
 ```
 
 ### 基礎操作教學
 
 #### 1. 執行新聞爬取
-
-##### 定期爬蟲（按季度）
-```bash
-# 執行主要爬蟲程式
-python main.py
-
-# 程式會自動：
-# - 根據預設關鍵字進行搜尋
-# - 按季度時間範圍收集數據
-# - 將結果存儲到 data/ 目錄
-```
 
 ##### 每週爬蟲
 ```bash
@@ -231,66 +243,84 @@ python main_week.py
 
 ```bash
 # 分析收集到的文章
-python analyze_files.py
+python analyze_files_week.py
 
 # 系統會：
-# - 讀取 data/ 目錄中的文章
-# - 使用 AI 進行內容分析
-# - 生成摘要和關鍵信息
-# - 存儲結果到 analysis_results/
+# - 讀取 data/ 目錄中的 JSON 文章檔案
+# - 使用 OpenAI GPT-4 進行內容分析和翻譯
+# - 生成繁體中文摘要和標籤
+# - 存儲結果到 MongoDB insight_report 集合
 ```
 
 #### 3. 數據輸出格式
 
-##### CSV 格式（analysis_results/）
-```csv
-季度,分析內容
-2023_Q1,"[連結] 標題 摘要..."
-2023_Q2,"[連結] 標題 摘要..."
+##### JSON 格式（data/日期範圍/）
+```json
+[
+  {
+    "title": "原始英文標題",
+    "date": "2025-07-01T12:00:00",
+    "link": "https://example.com/article",
+    "content": "文章內容..."
+  }
+]
 ```
 
-##### Excel 格式（新聞分析結果.xlsx）
-- 包含所有類別的彙總分析
-- 按季度組織的數據表
-- 統計圖表和趨勢分析
+##### MongoDB 格式（insight_report 集合）
+```json
+{
+  "category": "實體賭場",
+  "filename": "實體賭場.json",
+  "link": "https://example.com/article",
+  "original_title": "原始英文標題",
+  "標題": "翻譯後的繁體中文標題",
+  "摘要": "150字內的繁體中文摘要",
+  "標籤": ["市場", "法規"],
+  "created_at": "2025-07-23T10:00:00",
+  "date": "20250701_20250701"
+}
+```
 
 ### 進階操作教學
 
 #### 1. 自訂關鍵字搜尋
 
-編輯 `main.py` 中的關鍵字字典：
+編輯 `main_week.py` 中的關鍵字字典：
 ```python
 keyword_dict = {
-    "市場": ["America+(USA)", "UK", "Europe"],  # 添加新關鍵字
+    "實體賭場": ["Casino"],
+    "線上博弈": ["mobile+Gambling"],
+    "社交博弈": ["social+casino"],
+    "法規與政策": ["Market+Trends", "Regulatory", "policy", "class+action", "lawsuit", "state+prohibition", "state+ban"],
+    "平台": ["App+Store", "Google+Play"],
     "新類別": ["new_keyword1", "new_keyword2"],  # 新增類別
-    # ... 其他類別
 }
 ```
 
 #### 2. 調整時間範圍
 
 ```python
-# 在 main.py 中修改季度定義
-def get_quarter_dates(year):
-    quarters = [
-        # 自訂 Q1 時間範圍
-        (f"{year}-01-01T00:00:00", f"{year}-03-31T23:59:59"),
-        # ... 其他季度
-    ]
-    return quarters
+# 在 main_week.py 中修改日期範圍
+date_after = "2025-07-01T00:00:00"   # 開始日期
+date_before = "2025-07-01T23:59:59"  # 結束日期
 ```
 
 #### 3. 修改分析提示詞
 
-在 `analyze_files.py` 中調整 AI 分析提示：
+在 `analyze_files_week.py` 中調整 AI 分析提示：
 ```python
-prompt = f"""
-請根據以下要求分析新聞文章：
-1. 摘要長度：150字以內
-2. 重點關注：政策變化、市場趨勢、技術創新
-3. 輸出格式：標準化結構
-...
-"""
+prompt = f"""請分析以下文章並提供：
+1. 將標題從英文翻譯成繁體中文
+2. 提供150字內的繁體中文摘要
+3. 根據內容，僅能從下列標籤中選擇1~3個最合適的繁體中文標籤（以逗號分隔）：
+市場、法規、政策、集體訴訟、訴訟、州禁令
+
+文章內容：
+標題：{article.get('title', '')}
+內容：{article.get('content', '')}
+
+請直接輸出以下JSON格式（務必用雙引號），其他內容都不要留：
+{{"標題":"","摘要":"","標籤":["",""]}}"""
 ```
 
 ### 故障排除指南
@@ -300,16 +330,17 @@ prompt = f"""
 1. **API 請求失敗**
    ```bash
    # 檢查網路連線
-   ping igbnorthamerica.com
+   ping igamingbusiness.com
+   ping cdcgaming.com
    
-   # 檢查 API 金鑰有效性
-   # 更新 Google Gemini API 金鑰
+   # 檢查 OpenAI API 金鑰有效性
+   # 更新 OpenAI API 金鑰
    ```
 
 2. **MongoDB 連線問題**
    ```bash
    # 測試數據庫連線
-   python -c "from pymongo import MongoClient; client = MongoClient('your_uri'); print(client.server_info())"
+   python -c "from pymongo import MongoClient; client = MongoClient('your_mongo_uri'); print(client.server_info())"
    ```
 
 3. **記憶體不足**
@@ -329,11 +360,13 @@ prompt = f"""
 
 #### 定期維護檢查清單
 
-- [ ] 檢查 API 金鑰有效期限
+- [ ] 檢查 OpenAI API 金鑰有效期限
+- [ ] 檢查 MongoDB 連線狀態
 - [ ] 監控磁碟空間使用情況
 - [ ] 備份重要分析結果
 - [ ] 更新依賴套件版本
 - [ ] 檢查系統錯誤日誌
+- [ ] 驗證 JSON 檔案完整性
 
 #### 效能優化建議
 

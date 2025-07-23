@@ -1,0 +1,6 @@
+pandas
+openpyxl
+tqdm
+pymongo
+wrapper-tls-requests
+openai
