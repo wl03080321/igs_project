@@ -49,7 +49,7 @@ RevenueExtraction/
 ├── logs/                       # 日誌檔案夾（自動建立）
 │   └── {日期}.log
 │
-└── 競業營收數據_{時間}.xlsx     # 匯出的Excel檔案
+└── 競業營收數據_{時間}.xlsx        # 匯出的Excel檔案
 ```
 
 ## 資料庫結構
