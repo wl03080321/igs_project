@@ -303,7 +303,7 @@ def _build_revenue_extraction_prompt(self, context: str, query: str) -> str:
 ## 錯誤數據處理建議
 **方法一：刪除錯誤數據後重新提取**
 - **連接MongoDB後刪除錯誤紀錄**
-- **執行 `main.py`，選擇，選擇 `2. 增量提取` 補充數據**
+- **執行 `main.py`，選擇 `2. 增量提取` 補充數據**
 
 **方法二：直接在 MongoDB 中手動修正數值**
 
