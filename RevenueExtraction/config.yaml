@@ -1,0 +1,66 @@
+# OpenAI API設定
+openai:
+  api_key: "your-openai-api-key-here"
+  model: "gpt-4.1"
+  max_tokens: 2000
+  temperature: 0.1
+
+# MongoDB設定  
+mongodb:
+  uri: "mongodb+srv://<username>:<password>@cluster0.rlfhtdy.mongodb.net/"
+  database_name: "igs_project"
+  collections:
+    embeddings: "financial_analysis_embeddings"
+    revenue: "financial_revenue"
+
+# RAG檢索設定
+rag:
+  search_limit: 20
+  max_context_length: 200000
+  embedding_model: "paraphrase-multilingual-MiniLM-L12-v2"
+
+# 單位轉換設定
+unit_conversion:
+  # 英文單位（轉換為百萬）
+  thousand: 0.001
+  thousands: 0.001
+  million: 1.0
+  millions: 1.0
+  billion: 1000.0
+  billions: 1000.0
+  
+  # 韓文單位
+  천: 0.001      # 千
+  만: 0.01       # 萬
+  억: 100.0      # 億
+  
+  # 其他可能的表示方式
+  '000': 0.001
+  '000,000': 1.0
+  '000,000,000': 1000.0
+  '': 1.0
+  none: 1.0
+  raw: 1.0
+
+# 匯率設定
+exchange_rates:
+  KRW_to_USD: 0.000714  # 韓元轉美元 (1/1400)
+  USD_to_USD: 1.0       # 美元保持不變
+
+# Excel輸出設定
+excel_output:
+  filename_prefix: "競業營收數據"
+  headers:
+    - "公司"
+    - "年份季度"
+    - "總營收(百萬美元)"
+    - "原始數值"
+    - "原始單位"
+    - "原始幣別"
+    - "數據類型"
+    - "建立日期"
+
+# 日誌設定
+logging:
+  level: "INFO"
+  format: "%(asctime)s - %(levelname)s: %(message)s"

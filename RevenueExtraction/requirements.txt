@@ -1,0 +1,19 @@
+# MongoDB連接
+pymongo
+
+# OpenAI API
+openai
+
+# 向量處理和機器學習
+sentence-transformers
+scikit-learn
+numpy
+
+# 數據處理
+pandas
+
+# Excel操作
+openpyxl
+
+# 配置檔案處理
+PyYAML
