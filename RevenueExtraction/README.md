@@ -15,7 +15,7 @@
 ```
 RevenueExtraction/
 │
-├── main.py                     # 主程式入口
+├── main.py                     # 主程式
 ├── config.yaml                 # 配置檔
 ├── requirements.txt            # 套件清單
 │
@@ -129,14 +129,13 @@ mongodb:
   database_name: "igs_project"
   collections:
     embeddings: "financial_analysis_embeddings"  # 來源向量集合
-    revenue: "financial_revenue_try"            # 營收數據集合
+    revenue: "financial_revenue"                 # 營收數據集合
 ```
 
 ### 步驟 4: 前置條件檢查
 **重要：此模組需要先執行Insight模組**
 ```bash
-# 檢查是否已有向量資料庫
-# MongoDB中應該已存在 financial_analysis_embeddings 集合
+# 檢查MongoDB中是否存在 financial_analysis_embeddings 集合
 ```
 
 ## 操作教學
@@ -149,21 +148,16 @@ python main.py
 程式提供以下6種處理模式：
 
 **1. 完整重新提取**
-- 清空所有現有營收數據
-- 重新提取所有公司所有季度的營收數據
-- 自動計算Q4營收
-- 自動匯出Excel檔案
+- 清空所有現有營收數據並重新提取所有公司季度的營收數據
+- 自動計算Q4營收並匯出Excel檔案
 - 適用於：首次使用或需要重新開始
 
 **2. 增量提取**
 - 只處理尚未提取營收數據的公司/季度組合
 - 保留現有數據，只新增缺失的記錄
-- 自動計算Q4營收
-- 自動匯出Excel檔案
 - 適用於：新增財報後的更新
 
 **3. 只匯出現有數據到Excel**
-- 不進行數據提取
 - 直接將資料庫中的營收數據匯出為Excel
 - 適用於：重新產生報表
 
@@ -174,7 +168,6 @@ python main.py
 **5. 單獨計算Q4營收**
 - 使用現有的全年和Q1~Q3數據計算Q4營收
 - 公式：Q4 = 全年營收 - (Q1 + Q2 + Q3)
-- 可選匯出更新後的Excel
 - 適用於：補充缺失的Q4數據
 
 **6. 退出程式**
@@ -184,13 +177,135 @@ python main.py
 2. **資料庫檢查**：驗證MongoDB連接和資料狀態
 3. **向量搜尋**：使用多階段檢索策略搜尋相關財報內容
 4. **GPT分析**：將搜尋結果送至GPT-4.1進行營收數據提取
-5. **數據解析**：解析GPT回應，提取數值、單位、幣別
+5. **數據解析**：提取數值、單位、幣別
 6. **單位轉換**：統一轉換為百萬美元單位
 7. **數據存儲**：儲存至MongoDB資料庫
 8. **Q4計算**：自動計算第四季度營收
 9. **Excel匯出**：產生結構化報表
 
 執行日誌記錄於 `logs/YYYYMMDD.log` 檔中
+
+## 功能擴展
+### 新增支援的幣別
+**1. 修改配置檔 `config.yaml`**：
+```yaml
+# 匯率設定
+exchange_rates:
+  KRW_to_USD: 0.000714  # 韓元轉美元 (1/1400)
+  USD_to_USD: 1.0       # 美元保持不變
+  EUR_to_USD: 1.1       # 歐元轉美元（新增）
+  JPY_to_USD: 0.0067    # 日圓轉美元（新增）
+  CNY_to_USD: 0.14      # 人民幣轉美元（新增）
+  TWD_to_USD: 0.031     # 新台幣轉美元（新增）
+```
+
+**2. 更新單位轉換器 `processors/unit_converter.py`**：
+```python
+def convert_to_million_usd(self, value: Union[str, float, int], unit: str, currency: str) -> float:
+    # 在現有程式碼中新增幣別處理
+    if currency == "EUR":
+        value_in_millions_usd = value_in_millions * self.exchange_rates.get('EUR_to_USD', 1.1)
+    elif currency == "JPY":
+        value_in_millions_usd = value_in_millions * self.exchange_rates.get('JPY_to_USD', 0.0067)
+    elif currency == "CNY":
+        value_in_millions_usd = value_in_millions * self.exchange_rates.get('CNY_to_USD', 0.14)
+    elif currency == "TWD":
+        value_in_millions_usd = value_in_millions * self.exchange_rates.get('TWD_to_USD', 0.031)
+    # ... 其他現有程式碼
+```
+
+**3. 更新RAG提取器的提示詞 `extractors/rag_extractor.py`**：
+```python
+def _build_revenue_extraction_prompt(self, context: str, query: str) -> str:
+    # 在提示詞中新增幣別識別說明
+    prompt = f"""
+    3. **幣別處理**：
+       - 美元：如果看到 $ 或 USD 或相關描述，記為 USD
+       - 韓元：如果看到 원 或 KRW 或相關描述，記為 KRW
+       - 歐元：如果看到 € 或 EUR 或相關描述，記為 EUR
+       - 日圓：如果看到 ¥ 或 JPY 或相關描述，記為 JPY  
+       - 人民幣：如果看到 ¥ 或 CNY 或 RMB 或相關描述，記為 CNY
+       - 新台幣：如果看到 NT$ 或 TWD 或相關描述，記為 TWD
+    """
+```
+
+### 新增支援的單位
+**1. 修改配置檔 `config.yaml`**：
+```yaml
+unit_conversion:
+  # 英文單位（轉換為百萬）
+  thousand: 0.001
+  thousands: 0.001
+  million: 1.0
+  millions: 1.0
+  billion: 1000.0
+  billions: 1000.0
+  trillion: 1000000.0     # 兆（新增）
+  trillions: 1000000.0    # 兆（新增）
+  
+  # 韓文單位
+  천: 0.001      # 千
+  만: 0.01       # 萬
+  억: 100.0      # 億
+  조: 1000000.0  # 兆（新增）
+  
+  # 中文單位（新增）
+  千: 0.001      # 千
+  萬: 0.01       # 萬
+  億: 100.0      # 億
+  兆: 1000000.0  # 兆
+  
+  # 日文單位（新增）
+  千: 0.001      # 千
+  万: 0.01       # 萬
+  億: 100.0      # 億
+  兆: 1000000.0  # 兆
+  
+  # 科學記號單位（新增）
+  k: 0.001       # 千（k）
+  m: 1.0         # 百萬（m）
+  b: 1000.0      # 十億（b）
+  t: 1000000.0   # 兆（t）
+```
+
+**2. 更新單位轉換器 `processors/unit_converter.py`**：
+```python
+def normalize_unit_name(self, unit_str: Union[str, None]) -> str:
+    # 在現有程式碼基礎上新增更多單位變體處理
+    unit_str = unit_str.replace('tln', 'trillion')
+    unit_str = unit_str.replace('tri', 'trillion')
+    
+    # 處理科學記號
+    unit_str = unit_str.replace('k', 'thousand')
+    unit_str = unit_str.replace('m', 'million') 
+    unit_str = unit_str.replace('b', 'billion')
+    unit_str = unit_str.replace('t', 'trillion')
+    
+    return unit_str.strip()
+```
+
+**3. 更新RAG提取器的提示詞 `extractors/rag_extractor.py`**：
+```python
+def _build_revenue_extraction_prompt(self, context: str, query: str) -> str:
+    # 在提示詞中新增單位識別說明
+    return f"""
+    2. **單位識別（重要）**：
+       - **英文單位**：thousand, million, billion, trillion
+       - **韓文單位**：천(千), 만(萬), 억(億), 조(兆)
+       - **中文單位**：千, 萬, 億, 兆
+       - **日文單位**：千, 万, 億, 兆
+       - **科學記號**：K/k(千), M/m(百萬), B/b(十億), T/t(兆)
+       - **縮寫形式**：tln/tri(兆), mln(百萬), bln(十億)
+       - 如果沒有明確單位，根據上下文和數值大小推測最可能的單位
+    """   
+```
+
+## 錯誤數據處理建議
+**方法一**：刪除錯誤數據後重新提取
+1. **連接MongoDB後刪除錯誤紀錄**
+2. **執行 `main.py`，選擇，選擇 `2. 增量提取` 補充數據
+
+**方法二**：直接在 MongoDB 中手動修正數值
 
 ##  研究成果結案說明
 ### 專案概述
@@ -210,12 +325,12 @@ python main.py
 ```
 
 #### 2. **智能單位轉換**
-支援的單位類型：
+**支援的單位類型**：
 - **英文單位**：thousand, million, billion
 - **韓文單位**：천(千), 만(萬), 억(億)
 - **自動識別**：根據上下文推測單位
 
-轉換流程：
+**轉換流程**：
 ```python
 # 轉換公式
 標準化數值 = 原始數值 × 單位係數 × 匯率係數
@@ -240,7 +355,7 @@ Q4營收 = 全年營收 - (Q1營收 + Q2營收 + Q3營收)
 3. **依賴Insight模組**：必須先有向量化的財報數據，才能進行營收數據提取
 4. **匯率固定**：韓元對美元匯率設定為1/1400，需定期更新
 5. **數據準確性**：營收數據提取基於AI分析，建議人工抽查驗證
-6. **單位轉換**：系統自動進行單位轉換，但建議人工檢查轉換結果合理性
+6. **單位轉換**：系統自動進行單位轉換，但建議檢查結果合理性
 
 ##  相關技術資源
 - **OpenAI API 文件**：https://platform.openai.com/docs
