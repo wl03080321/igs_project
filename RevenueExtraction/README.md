@@ -131,7 +131,7 @@ mongodb:
 ```
 
 ### 步驟 4: 前置條件檢查
-**重要：此模組需要先執行Insight模組**
+**重要：運行此模組前需要先執行Insight模組**
 ```bash
 # 檢查MongoDB中是否存在 financial_analysis_embeddings 集合
 ```
