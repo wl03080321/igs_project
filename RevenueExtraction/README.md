@@ -305,7 +305,7 @@ def _build_revenue_extraction_prompt(self, context: str, query: str) -> str:
 - 連接MongoDB後刪除錯誤紀錄
 - 執行 `main.py`，選擇 `2. 增量提取` 補充數據
 
-**方法二**：直接在 MongoDB 中手動修正數值
+**方法二**：直接在MongoDB中手動修正數值
 
 ##  研究成果結案說明
 ### 專案概述
@@ -350,8 +350,8 @@ Q4營收 = 全年營收 - (Q1營收 + Q2營收 + Q3營收)
 
 ***
 ## 注意事項
-1. **API金鑰設定**：必須在 `config.yaml` 中設定有效的 OpenAI API 金鑰
-2. **MongoDB 連線**：確保 MongoDB 連線字串正確，同時確認資料庫名稱與集合名稱設定無誤
+1. **API金鑰設定**：必須在 `config.yaml` 中設定有效的OpenAI API金鑰
+2. **MongoDB 連線**：確保MongoDB連線字串正確，同時確認資料庫名稱與集合名稱設定無誤
 3. **依賴Insight模組**：必須先有向量化的財報數據，才能進行營收數據提取
 4. **匯率固定**：韓元對美元匯率設定為1/1400，需定期更新
 5. **數據準確性**：營收數據提取基於AI分析，建議人工抽查驗證
