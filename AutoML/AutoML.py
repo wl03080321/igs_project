@@ -13,6 +13,8 @@ from sklearn.metrics import mean_squared_error, mean_absolute_error, r2_score
 from xgboost import XGBRegressor
 import warnings
 from pymongo import MongoClient
+import gc  
+import multiprocessing  
 
 warnings.filterwarnings('ignore')
 
@@ -168,20 +170,32 @@ def create_features(df, config):
         logger.error(f"特徵工程失敗: {str(e)}")
         raise
 
-# 安全的模型訓練函數
+# 模型訓練函數 
 def safe_model_training(model, X, y, cv, model_name):
-    """安全的模型訓練函數"""
+    """模型訓練函數"""
     try:
-        cv_scores = cross_val_score(model, X, y, cv=cv, scoring='neg_mean_squared_error', n_jobs=-1)
+        # 針對XGBoost進行特殊處理
+        if 'XGB' in model_name or 'xgb' in str(type(model)).lower():
+            # 設定單執行緒並關閉記憶體映射
+            model.set_params(n_jobs=1, tree_method='hist')
+            
+        # 設定n_jobs=1避免多執行緒問題
+        cv_scores = cross_val_score(model, X, y, cv=cv, scoring='neg_mean_squared_error', n_jobs=1)
         mean_score = -cv_scores.mean()
         std_score = cv_scores.std()
+        
+        # 強制垃圾回收
+        gc.collect()
+        
         logger.info(f"{model_name}: MSE = {mean_score:.2f} (±{std_score:.2f})")
         return mean_score, std_score, True
+        
     except Exception as e:
         logger.error(f"{model_name} 訓練失敗: {str(e)}")
+        gc.collect()  # 錯誤時也進行垃圾回收
         return float('inf'), 0, False
 
-# 多模型比較和訓練
+# 多模型比較和訓練 
 def train_multiple_models(df_features, config):
     """訓練多個模型並選擇最佳模型"""
     try:
@@ -204,12 +218,17 @@ def train_multiple_models(df_features, config):
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
         
-        # 定義多個模型
+        # 強制轉換為numpy array並確保連續記憶體
+        X_scaled = np.ascontiguousarray(X_scaled)
+        y = np.ascontiguousarray(y.values)
+        
+        # 定義多個模型 
         model_config = config['model']
         models = {
             'RandomForest': RandomForestRegressor(
                 n_estimators=model_config['rf_n_estimators'],
-                random_state=model_config['random_state']
+                random_state=model_config['random_state'],
+                n_jobs=1  # 改為單執行緒
             ),
             'GradientBoosting': GradientBoostingRegressor(
                 n_estimators=model_config['gb_n_estimators'],
@@ -217,14 +236,17 @@ def train_multiple_models(df_features, config):
             ),
             'LinearRegression': LinearRegression(),
             'Ridge': Ridge(alpha=model_config['ridge_alpha']),
-            'Lasso': Lasso(alpha=model_config['lasso_alpha']),
+            'Lasso': Lasso(alpha=model_config['lasso_alpha'], max_iter=2000),
             'SVR': SVR(
                 kernel=model_config['svr_kernel'],
                 C=model_config['svr_C']
             ),
             'XGBoost': XGBRegressor(
                 n_estimators=model_config['xgb_n_estimators'],
-                random_state=model_config['random_state']
+                random_state=model_config['random_state'],
+                n_jobs=1,  # 單執行緒
+                tree_method='hist',  # 使用histogram方法
+                verbosity=0  # 減少輸出
             )
         }
         
@@ -237,6 +259,7 @@ def train_multiple_models(df_features, config):
         logger.info("-" * 60)
         
         for name, model in models.items():
+            logger.info(f"正在訓練 {name}...")
             mean_score, std_score, success = safe_model_training(model, X_scaled, y, tscv, name)
             
             if success:
@@ -245,6 +268,9 @@ def train_multiple_models(df_features, config):
                     'std': std_score,
                     'model': model
                 }
+            
+            # 每個模型訓練後進行垃圾回收
+            gc.collect()
         
         if not model_scores:
             raise ValueError("所有模型訓練失敗")
@@ -272,10 +298,14 @@ def train_multiple_models(df_features, config):
         logger.info(f"  R²:  {r2:.4f}")
         logger.info("-" * 60)
         
+        # 最終垃圾回收
+        gc.collect()
+        
         return best_model, scaler, best_model_name, model_scores, feature_columns
         
     except Exception as e:
         logger.error(f"模型訓練失敗: {str(e)}")
+        gc.collect()
         raise
 
 # 預測未來季度並準備MongoDB格式
@@ -353,6 +383,7 @@ def predict_future_quarters_for_mongo(df, model, scaler, feature_columns, config
                 
                 # 構建特徵矩陣
                 X_pred = np.array([[feature_dict[col] for col in feature_columns]])
+                X_pred = np.ascontiguousarray(X_pred)  # 確保連續記憶體
                 
                 # 標準化特徵
                 X_pred_scaled = scaler.transform(X_pred)
@@ -373,10 +404,15 @@ def predict_future_quarters_for_mongo(df, model, scaler, feature_columns, config
                 logger.info(f"  {next_year}_Q{next_quarter}: {pred_value:.2f}")
         
         logger.info(f"完成所有預測，總計 {len(future_predictions)} 筆")
+        
+        # 進行垃圾回收
+        gc.collect()
+        
         return future_predictions
         
     except Exception as e:
         logger.error(f"預測失敗: {str(e)}")
+        gc.collect()
         raise
 
 # 將預測結果寫入MongoDB
@@ -431,6 +467,10 @@ def validate_predictions(collection):
 def main(config_path="config.yaml"):
     """主要執行函數"""
     try:
+        # 設定multiprocessing為spawn模式 (Windows相容)
+        if __name__ == "__main__":
+            multiprocessing.set_start_method('spawn', force=True)
+        
         # 載入配置
         config = load_config(config_path)
         
@@ -474,10 +514,14 @@ def main(config_path="config.yaml"):
         logger.info(f"預測流程完成，最佳模型: {best_model_name}")
         logger.info("=== AutoML 營收預測結束 ===")
         
+        # 最終垃圾回收
+        gc.collect()
+        
         return predictions, best_model_name, model_scores
         
     except Exception as e:
         logger.error(f"程式執行失敗: {str(e)}")
+        gc.collect()
         raise
 
 if __name__ == "__main__":
