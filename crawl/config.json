@@ -1,0 +1,33 @@
+{
+  "api_token": "",
+  "date_after": "2025-08-01T00:00:00",
+  "date_before": "2025-08-01T23:59:59",
+  "data_root": "./data",
+  "per_page": 100,
+  "websites": [
+    "https://www.igamingbusiness.com/",
+    "https://cdcgaming.com/"
+  ],
+  "keywords": {
+    "實體賭場": ["Casino"],
+    "線上博弈": ["mobile+Gambling"],
+    "社交博弈": ["social+casino"],
+    "法規與政策": ["Market+Trends", "Regulatory", "policy", "class+action", "lawsuit", "state+prohibition", "state+ban"],
+    "平台": ["App+Store", "Google+Play"]
+  },
+  "openai": {
+    "api_key": "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",
+    "model": "gpt-4o",
+    "max_tokens": 300,
+    "temperature": 0.7
+  },
+  "mongodb": {
+    "uri": "mongodb+srv://petercy32:AfEjW3g4z8kPbzgf@cluster0.rlfhtdy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0",
+    "database": "igs_project",
+    "collection": "insight_report"
+  },
+  "analysis": {
+    "rate_limit_delay": 1,
+    "tags": ["市場", "法規", "政策", "集體訴訟", "訴訟", "州禁令"]
+  }
+}

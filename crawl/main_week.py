@@ -5,12 +5,21 @@ import os
 import json
 
 
+def load_config():
+    """載入配置文件"""
+    try:
+        with open('config.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("config.json 不存在，使用預設值")
+        return None
 
-def fetch_posts(url,keyword, per_page, page,date_after,date_before,):
+
+def fetch_posts(url, keyword, per_page, page, date_after, date_before):
     search_content = []
     Crawl_continue = True
 
-    while Crawl_continue :
+    while Crawl_continue:
         try:
             burp0_url = f"{url}wp-json/wp/v2/posts?search={keyword}&per_page={per_page}&page={page}&orderby=date&order=desc&before={date_before}&after={date_after}"
 
@@ -29,22 +38,37 @@ def fetch_posts(url,keyword, per_page, page,date_after,date_before,):
     return search_content
 
 
-keyword_dict={
-  "實體賭場": ["Casino"],
-  "線上博弈": ["mobile+Gambling"],
-  "社交博弈": ["social+casino"],
-  "法規與政策": ["Market+Trends", "Regulatory", "policy","class+action", "lawsuit", "state+prohibition", "state+ban"],
-  "平台":["App+Store", "Google+Play"],
+# 載入配置
+config = load_config()
 
-}
-
-webs = ["https://www.igamingbusiness.com/","https://cdcgaming.com/"]
-
-date_after = "2025-07-01T00:00:00"
-date_before = "2025-07-01T23:59:59"
+if config:
+    # 從配置文件讀取
+    keyword_dict = config["keywords"]
+    webs = config["websites"]
+    date_after = config["date_after"]
+    date_before = config["date_before"]
+    data_root = config["data_root"]
+    per_page = config["per_page"]
+    api_token = config.get("api_token", "")
+    print("已載入配置文件")
+else:
+    # 預設值
+    keyword_dict = {
+        "實體賭場": ["Casino"],
+        "線上博弈": ["mobile+Gambling"],
+        "社交博弈": ["social+casino"],
+        "法規與政策": ["Market+Trends", "Regulatory", "policy", "class+action", "lawsuit", "state+prohibition", "state+ban"],
+        "平台": ["App+Store", "Google+Play"],
+    }
+    webs = ["https://www.igamingbusiness.com/", "https://cdcgaming.com/"]
+    date_after = "2025-07-01T00:00:00"
+    date_before = "2025-07-01T23:59:59"
+    data_root = "./data"
+    per_page = 100
+    api_token = ""
+    print("使用預設配置")
 
 # 確保根 data 資料夾存在
-data_root = "./data"
 if not os.path.exists(data_root):
     os.makedirs(data_root)
     print(f"Created directory: {data_root}")
@@ -52,24 +76,25 @@ if not os.path.exists(data_root):
 # Create directory based on date range
 start_date = datetime.datetime.strptime(date_after, "%Y-%m-%dT%H:%M:%S")
 end_date = datetime.datetime.strptime(date_before, "%Y-%m-%dT%H:%M:%S")
-dir_name = f"./data/{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+dir_name = f"{data_root}/{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
 os.makedirs(dir_name, exist_ok=True)
+
+print(f"爬取時間範圍: {date_after} 到 {date_before}")
+print(f"目標網站: {webs}")
 
 for classification, keywords in keyword_dict.items():
     search_content = []
     
     for keyword in keywords:
         for web in webs:
-            post_count = 100
             page = 1
-            per_page = 100
 
             print(f"Classification: {classification}, Keyword: {keyword}, Web: {web}, Page: {page}")
             
             post = fetch_posts(web, keyword, per_page, page, date_after, date_before)
             search_content += post
 
-    # 處理當前季度的數據
+    # 處理當前分類的數據
     if search_content:  # 只在有數據時處理
         data = []
         for page in search_content:
@@ -92,5 +117,5 @@ for classification, keywords in keyword_dict.items():
         df.to_json(filename, orient='records', force_ascii=False, indent=2)
         print(f"Saved to {filename}")
     
-    # 清空當前季度的搜索內容，準備處理下一個季度
+    # 清空當前分類的搜索內容，準備處理下一個分類
     search_content = []

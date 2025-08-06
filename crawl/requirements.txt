@@ -4,3 +4,4 @@ tqdm
 pymongo
 wrapper-tls-requests
 openai
+requests    

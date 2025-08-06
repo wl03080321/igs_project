@@ -8,15 +8,54 @@ import json
 from pymongo import MongoClient
 from datetime import datetime
 
+def load_config():
+    """載入配置文件"""
+    try:
+        with open('config.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        print("config.json 不存在，使用預設值")
+        return None
+
+# 載入配置
+config = load_config()
+
+if config:
+    # 從配置文件讀取
+    OPENAI_API_KEY = config["openai"]["api_key"]
+    OPENAI_MODEL = config["openai"]["model"]
+    OPENAI_MAX_TOKENS = config["openai"]["max_tokens"]
+    OPENAI_TEMPERATURE = config["openai"]["temperature"]
+    
+    MONGO_URI = config["mongodb"]["uri"]
+    MONGO_DATABASE = config["mongodb"]["database"]
+    MONGO_COLLECTION = config["mongodb"]["collection"]
+    
+    RATE_LIMIT_DELAY = config["analysis"]["rate_limit_delay"]
+    AVAILABLE_TAGS = config["analysis"]["tags"]
+    print("已載入配置文件")
+else:
+    # 預設值
+    OPENAI_API_KEY = "your_openai_api_key_here"
+    OPENAI_MODEL = "gpt-4o"
+    OPENAI_MAX_TOKENS = 300
+    OPENAI_TEMPERATURE = 0.7
+    
+    MONGO_URI = "your_mongodb_uri_here"
+    MONGO_DATABASE = "igs_project"
+    MONGO_COLLECTION = "insight_report"
+    
+    RATE_LIMIT_DELAY = 1
+    AVAILABLE_TAGS = ["市場", "法規", "政策", "集體訴訟", "訴訟", "州禁令"]
+    print("使用預設配置")
+
 # Configure OpenAI API
-OPENAI_API_KEY = "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"
 openai.api_key = OPENAI_API_KEY
 
 # MongoDB connection
-MONGO_URI = "mongodb+srv://petercy32:AfEjW3g4z8kPbzgf@cluster0.rlfhtdy.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0"
 client = MongoClient(MONGO_URI)
-db = client.igs_project
-collection = db.insight_report
+db = client[MONGO_DATABASE]
+collection = db[MONGO_COLLECTION]
 
 def get_category_from_filename(filename):
     """Extract category from filename"""
@@ -25,12 +64,13 @@ def get_category_from_filename(filename):
 def analyze_article_with_openai(article):
     """Analyze a single article using OpenAI API (v1.x syntax)"""
     try:
-        prompt = f"""請分析以下文章並提供：\n1. 將標題從英文翻譯成繁體中文\n2. 提供150字內的繁體中文摘要\n3. 根據內容，僅能從下列標籤中選擇1~3個最合適的繁體中文標籤（以逗號分隔）：\n市場、法規、政策、集體訴訟、訴訟、州禁令\n\n文章內容：\n標題：{article.get('title', '')}\n內容：{article.get('content', '')}\n\n請直接輸出以下JSON格式（務必用雙引號），其他內容都不要留：\n{{"標題":"","摘要":"","標籤":["",""]}}"""
+        tags_str = "、".join(AVAILABLE_TAGS)
+        prompt = f"""請分析以下文章並提供：\n1. 將標題從英文翻譯成繁體中文\n2. 提供150字內的繁體中文摘要\n3. 根據內容，僅能從下列標籤中選擇1~3個最合適的繁體中文標籤（以逗號分隔）：\n{tags_str}\n\n文章內容：\n標題：{article.get('title', '')}\n內容：{article.get('content', '')}\n\n請直接輸出以下JSON格式（務必用雙引號），其他內容都不要留：\n{{"標題":"","摘要":"","標籤":["",""]}}"""
         response = openai.chat.completions.create(
-            model="gpt-4o",
+            model=OPENAI_MODEL,
             messages=[{"role": "user", "content": prompt}],
-            max_tokens=300,
-            temperature=0.7
+            max_tokens=OPENAI_MAX_TOKENS,
+            temperature=OPENAI_TEMPERATURE
         )
         content = response.choices[0].message.content
         print("[OpenAI 回傳內容]:", content)  # debug log
@@ -97,7 +137,7 @@ def process_json_files():
                         '標籤': analysis.get('標籤', '')
                     }
                     file_results.append(result)
-                    time.sleep(1)  # Rate limiting
+                    time.sleep(RATE_LIMIT_DELAY)  # Rate limiting from config
                 
                 category_results[file.name] = file_results
                 
