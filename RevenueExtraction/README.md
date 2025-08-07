@@ -68,7 +68,7 @@ RevenueExtraction/
 }
 ```
 
-**2. financial_revenue_try**：營收數據存儲集合
+**2. financial_revenue**：營收數據存儲集合
 ```json
 {
   "_id": ObjectId,
