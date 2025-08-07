@@ -117,66 +117,50 @@ def load_and_prepare_data_from_mongo(collection):
         logger.error(f"資料載入失敗: {str(e)}")
         raise
 
-# 特徵工程
-def create_features(df, config):
-    """為每家公司建立滯後特徵"""
+# 特徵工程（針對單一公司）
+def create_features_for_company(company_data, config):
+    """為單一公司建立滯後特徵"""
     try:
-        companies = df['公司名稱'].unique()
-        all_data = []
+        company_data = company_data.sort_values('時間序號').copy()
         
         lag_periods = config['features']['lag_periods']
         rolling_windows = config['features']['rolling_windows']
         include_seasonality = config['features']['include_seasonality']
         
-        for company in companies:
-            company_data = df[df['公司名稱'] == company].sort_values('時間序號')
-            
-            # 檢查資料量是否足夠
-            min_data_points = max(lag_periods) + max(rolling_windows)
-            if len(company_data) < min_data_points:
-                logger.warning(f"{company} 資料量不足 ({len(company_data)} < {min_data_points})，跳過此公司")
-                continue
-            
-            # 創建滯後特徵
-            for lag in lag_periods:
-                company_data[f'lag_{lag}'] = company_data['營收'].shift(lag)
-            
-            # 創建移動平均特徵
-            for window in rolling_windows:
-                company_data[f'rolling_mean_{window}'] = company_data['營收'].rolling(window=window).mean()
-            
-            # 添加季節性指標
-            if include_seasonality:
-                company_data['季節性_Q1'] = (company_data['季數值'] == 1).astype(int)
-                company_data['季節性_Q2'] = (company_data['季數值'] == 2).astype(int)
-                company_data['季節性_Q3'] = (company_data['季數值'] == 3).astype(int)
-                company_data['季節性_Q4'] = (company_data['季數值'] == 4).astype(int)
-            
-            all_data.append(company_data)
+        # 檢查資料量是否足夠
+        min_data_points = max(lag_periods) + max(rolling_windows)
+        if len(company_data) < min_data_points:
+            raise ValueError(f"資料量不足 ({len(company_data)} < {min_data_points})")
         
-        if not all_data:
-            raise ValueError("沒有公司的資料足夠進行特徵工程")
+        # 創建滯後特徵
+        for lag in lag_periods:
+            company_data[f'lag_{lag}'] = company_data['營收'].shift(lag)
         
-        df_features = pd.concat(all_data)
+        # 創建移動平均特徵
+        for window in rolling_windows:
+            company_data[f'rolling_mean_{window}'] = company_data['營收'].rolling(window=window).mean()
+        
+        # 添加季節性指標
+        if include_seasonality:
+            company_data['季節性_Q1'] = (company_data['季數值'] == 1).astype(int)
+            company_data['季節性_Q2'] = (company_data['季數值'] == 2).astype(int)
+            company_data['季節性_Q3'] = (company_data['季數值'] == 3).astype(int)
+            company_data['季節性_Q4'] = (company_data['季數值'] == 4).astype(int)
         
         # 丟棄有缺失值的行
-        df_features = df_features.dropna()
+        company_data = company_data.dropna()
         
-        logger.info(f"特徵工程完成，可用於訓練的資料: {len(df_features)} 筆")
-        
-        return df_features
+        return company_data
         
     except Exception as e:
-        logger.error(f"特徵工程失敗: {str(e)}")
-        raise
+        raise Exception(f"特徵工程失敗: {str(e)}")
 
 # 模型訓練函數 
 def safe_model_training(model, X, y, cv, model_name):
-    """模型訓練函數"""
+    """安全的模型訓練函數"""
     try:
         # 針對XGBoost進行特殊處理
         if 'XGB' in model_name or 'xgb' in str(type(model)).lower():
-            # 設定單執行緒並關閉記憶體映射
             model.set_params(n_jobs=1, tree_method='hist')
             
         # 設定n_jobs=1避免多執行緒問題
@@ -187,17 +171,15 @@ def safe_model_training(model, X, y, cv, model_name):
         # 強制垃圾回收
         gc.collect()
         
-        logger.info(f"{model_name}: MSE = {mean_score:.2f} (±{std_score:.2f})")
         return mean_score, std_score, True
         
     except Exception as e:
-        logger.error(f"{model_name} 訓練失敗: {str(e)}")
-        gc.collect()  # 錯誤時也進行垃圾回收
+        gc.collect()
         return float('inf'), 0, False
 
-# 多模型比較和訓練 
-def train_multiple_models(df_features, config):
-    """訓練多個模型並選擇最佳模型"""
+# 為單一公司訓練最佳模型
+def train_best_model_for_company(company_name, company_data_with_features, config):
+    """為單一公司訓練最佳模型"""
     try:
         # 準備特徵列表
         lag_features = [f'lag_{lag}' for lag in config['features']['lag_periods']]
@@ -208,59 +190,76 @@ def train_multiple_models(df_features, config):
             feature_columns += ['季節性_Q1', '季節性_Q2', '季節性_Q3', '季節性_Q4']
         
         # 準備訓練集
-        X = df_features[feature_columns]
-        y = df_features['營收']
+        X = company_data_with_features[feature_columns]
+        y = company_data_with_features['營收']
         
-        logger.info(f"使用特徵: {feature_columns}")
-        logger.info(f"訓練資料形狀: X={X.shape}, y={y.shape}")
+        if len(X) < 5:  # 資料量太少無法進行交叉驗證
+            logger.warning(f"{company_name}: 資料量太少 ({len(X)} < 5)，使用簡單線性回歸")
+            model = LinearRegression()
+            scaler = StandardScaler()
+            X_scaled = scaler.fit_transform(X)
+            model.fit(X_scaled, y)
+            
+            return {
+                'model': model,
+                'scaler': scaler,
+                'model_name': 'LinearRegression',
+                'mse': None,
+                'feature_columns': feature_columns
+            }
+        
+        logger.info(f"{company_name}: 使用特徵 {feature_columns}")
+        logger.info(f"{company_name}: 訓練資料形狀 X={X.shape}, y={y.shape}")
         
         # 標準化特徵
         scaler = StandardScaler()
         X_scaled = scaler.fit_transform(X)
-        
-        # 強制轉換為numpy array並確保連續記憶體
         X_scaled = np.ascontiguousarray(X_scaled)
-        y = np.ascontiguousarray(y.values)
+        y_values = np.ascontiguousarray(y.values)
         
-        # 定義多個模型 
+        # 定義多個模型
         model_config = config['model']
         models = {
             'RandomForest': RandomForestRegressor(
-                n_estimators=model_config['rf_n_estimators'],
+                n_estimators=min(model_config['rf_n_estimators'], 50),  # 減少樹數量
                 random_state=model_config['random_state'],
-                n_jobs=1  # 改為單執行緒
+                n_jobs=1
             ),
             'GradientBoosting': GradientBoostingRegressor(
-                n_estimators=model_config['gb_n_estimators'],
+                n_estimators=min(model_config['gb_n_estimators'], 50),  # 減少樹數量
                 random_state=model_config['random_state']
             ),
             'LinearRegression': LinearRegression(),
             'Ridge': Ridge(alpha=model_config['ridge_alpha']),
             'Lasso': Lasso(alpha=model_config['lasso_alpha'], max_iter=2000),
-            'SVR': SVR(
-                kernel=model_config['svr_kernel'],
-                C=model_config['svr_C']
-            ),
-            'XGBoost': XGBRegressor(
-                n_estimators=model_config['xgb_n_estimators'],
-                random_state=model_config['random_state'],
-                n_jobs=1,  # 單執行緒
-                tree_method='hist',  # 使用histogram方法
-                verbosity=0  # 減少輸出
-            )
         }
         
-        # 時間序列交叉驗證
-        tscv = TimeSeriesSplit(n_splits=model_config['cv_splits'])
+        # 如果資料量足夠，加入更複雜的模型
+        if len(X) >= 10:
+            models['SVR'] = SVR(
+                kernel=model_config['svr_kernel'],
+                C=model_config['svr_C']
+            )
+            models['XGBoost'] = XGBRegressor(
+                n_estimators=min(model_config['xgb_n_estimators'], 50),
+                random_state=model_config['random_state'],
+                n_jobs=1,
+                tree_method='hist',
+                verbosity=0
+            )
+        
+        # 時間序列交叉驗證（調整splits數量）
+        n_splits = min(model_config['cv_splits'], len(X) // 3)
+        if n_splits < 2:
+            n_splits = 2
+        tscv = TimeSeriesSplit(n_splits=n_splits)
         
         # 評估每個模型
         model_scores = {}
-        logger.info("正在評估多個模型...")
-        logger.info("-" * 60)
+        logger.info(f"{company_name}: 正在評估多個模型...")
         
         for name, model in models.items():
-            logger.info(f"正在訓練 {name}...")
-            mean_score, std_score, success = safe_model_training(model, X_scaled, y, tscv, name)
+            mean_score, std_score, success = safe_model_training(model, X_scaled, y_values, tscv, name)
             
             if success:
                 model_scores[name] = {
@@ -268,55 +267,132 @@ def train_multiple_models(df_features, config):
                     'std': std_score,
                     'model': model
                 }
+                logger.info(f"{company_name} - {name}: MSE = {mean_score:.2f} (±{std_score:.2f})")
             
-            # 每個模型訓練後進行垃圾回收
             gc.collect()
         
         if not model_scores:
-            raise ValueError("所有模型訓練失敗")
+            raise ValueError(f"{company_name}: 所有模型訓練失敗")
         
-        # 選擇最佳模型 (MSE最小)
+        # 選擇最佳模型
         best_model_name = min(model_scores.keys(), key=lambda k: model_scores[k]['mse'])
         best_model = model_scores[best_model_name]['model']
+        best_mse = model_scores[best_model_name]['mse']
         
-        logger.info("-" * 60)
-        logger.info(f"最佳模型: {best_model_name}")
-        logger.info(f"最佳 MSE: {model_scores[best_model_name]['mse']:.2f}")
+        logger.info(f"{company_name}: 最佳模型 = {best_model_name}, MSE = {best_mse:.2f}")
         
-        # 用全部數據訓練最佳模型
-        best_model.fit(X_scaled, y)
+        # 用全部數據重新訓練最佳模型
+        best_model.fit(X_scaled, y_values)
         
-        # 計算訓練集上的詳細評估指標
+        # 計算訓練集表現
         y_pred = best_model.predict(X_scaled)
-        mse = mean_squared_error(y, y_pred)
-        mae = mean_absolute_error(y, y_pred)
-        r2 = r2_score(y, y_pred)
+        mse = mean_squared_error(y_values, y_pred)
+        mae = mean_absolute_error(y_values, y_pred)
+        r2 = r2_score(y_values, y_pred)
         
-        logger.info(f"訓練集表現:")
-        logger.info(f"  MSE: {mse:.2f}")
-        logger.info(f"  MAE: {mae:.2f}")
-        logger.info(f"  R²:  {r2:.4f}")
-        logger.info("-" * 60)
+        logger.info(f"{company_name}: 訓練集表現 - MSE: {mse:.2f}, MAE: {mae:.2f}, R²: {r2:.4f}")
         
-        # 最終垃圾回收
         gc.collect()
         
-        return best_model, scaler, best_model_name, model_scores, feature_columns
+        return {
+            'model': best_model,
+            'scaler': scaler,
+            'model_name': best_model_name,
+            'mse': best_mse,
+            'feature_columns': feature_columns,
+            'training_metrics': {
+                'mse': mse,
+                'mae': mae,
+                'r2': r2
+            }
+        }
         
     except Exception as e:
-        logger.error(f"模型訓練失敗: {str(e)}")
+        logger.error(f"{company_name}: 模型訓練失敗 - {str(e)}")
         gc.collect()
         raise
 
-# 預測未來季度並準備MongoDB格式
-def predict_future_quarters_for_mongo(df, model, scaler, feature_columns, config):
-    """預測未來季度並返回MongoDB格式的資料"""
+# 為所有公司訓練獨立模型
+def train_models_for_all_companies(df, config):
+    """為每家公司訓練獨立模型"""
     try:
         companies = df['公司名稱'].unique()
+        company_models = {}
+        training_summary = {}
+        
+        logger.info(f"開始為 {len(companies)} 家公司訓練獨立模型...")
+        logger.info("=" * 80)
+        
+        for company in companies:
+            logger.info(f"正在處理公司: {company}")
+            
+            try:
+                # 獲取該公司的資料
+                company_data = df[df['公司名稱'] == company].copy()
+                
+                # 特徵工程
+                company_data_with_features = create_features_for_company(company_data, config)
+                
+                # 訓練模型
+                model_result = train_best_model_for_company(company, company_data_with_features, config)
+                
+                # 儲存結果
+                company_models[company] = model_result
+                training_summary[company] = {
+                    'model_name': model_result['model_name'],
+                    'cv_mse': model_result['mse'],
+                    'training_metrics': model_result['training_metrics'],
+                    'data_points': len(company_data_with_features)
+                }
+                
+                logger.info(f"{company}: 完成 ✓")
+                
+            except Exception as e:
+                logger.error(f"{company}: 訓練失敗 - {str(e)}")
+                training_summary[company] = {
+                    'model_name': 'FAILED',
+                    'error': str(e)
+                }
+            
+            logger.info("-" * 40)
+        
+        # 輸出訓練摘要
+        logger.info("=" * 80)
+        logger.info("模型訓練摘要:")
+        successful_companies = 0
+        
+        for company, summary in training_summary.items():
+            if summary['model_name'] != 'FAILED':
+                successful_companies += 1
+                cv_mse_str = f"{summary['cv_mse']:.2f}" if summary['cv_mse'] is not None else 'N/A'
+                logger.info(f"{company:<15}: {summary['model_name']:<18} | "
+                          f"資料點: {summary['data_points']:<3} | "
+                          f"CV MSE: {cv_mse_str}")
+            else:
+                logger.error(f"{company:<15}: 訓練失敗 - {summary.get('error', '未知錯誤')}")
+        
+        logger.info(f"成功訓練: {successful_companies}/{len(companies)} 家公司")
+        logger.info("=" * 80)
+        
+        if successful_companies == 0:
+            raise ValueError("沒有任何公司成功訓練模型")
+        
+        return company_models, training_summary
+        
+    except Exception as e:
+        logger.error(f"批量模型訓練失敗: {str(e)}")
+        raise
+
+# 使用獨立模型預測未來季度
+def predict_future_quarters_with_individual_models(df, company_models, config):
+    """使用每家公司的獨立模型預測未來季度"""
+    try:
         future_predictions = []
         num_future_quarters = config['model']['future_quarters']
         
-        for company in companies:
+        for company, model_info in company_models.items():
+            logger.info(f"使用 {model_info['model_name']} 預測 {company} 的未來 {num_future_quarters} 個季度")
+            
             company_data = df[df['公司名稱'] == company].sort_values('時間序號')
             last_time_idx = company_data['時間序號'].max()
             
@@ -325,9 +401,16 @@ def predict_future_quarters_for_mongo(df, model, scaler, feature_columns, config
             base_year = last_quarter_data['year']
             base_quarter = last_quarter_data['季數值']
             
-            logger.info(f"開始預測 {company} 的未來 {num_future_quarters} 個季度")
+            model = model_info['model']
+            scaler = model_info['scaler']
+            feature_columns = model_info['feature_columns']
             
-            # 依序預測未來幾個季度
+            # 為該公司創建完整的特徵資料
+            company_data_with_features = create_features_for_company(company_data, config)
+            
+            # 預測未來季度
+            company_predictions = []
+            
             for i in range(1, num_future_quarters + 1):
                 # 計算下一個季度的年份和季數
                 total_quarters = base_quarter + i
@@ -346,12 +429,12 @@ def predict_future_quarters_for_mongo(df, model, scaler, feature_columns, config
                         if hist_idx >= 0:
                             feature_dict[f'lag_{lag}'] = company_data['營收'].iloc[hist_idx]
                         else:
-                            feature_dict[f'lag_{lag}'] = 0
+                            feature_dict[f'lag_{lag}'] = company_data['營收'].mean()
                     else:
                         # 使用預測值
                         pred_idx = i - lag - 1
-                        if pred_idx < len(future_predictions):
-                            feature_dict[f'lag_{lag}'] = future_predictions[pred_idx]['value']
+                        if pred_idx < len(company_predictions):
+                            feature_dict[f'lag_{lag}'] = company_predictions[pred_idx]['value']
                         else:
                             feature_dict[f'lag_{lag}'] = company_data['營收'].iloc[-1]
                 
@@ -366,13 +449,13 @@ def predict_future_quarters_for_mongo(df, model, scaler, feature_columns, config
                                 values.append(company_data['營收'].iloc[hist_idx])
                         else:
                             pred_idx = i - j - 1
-                            if pred_idx < len(future_predictions):
-                                values.append(future_predictions[pred_idx]['value'])
+                            if pred_idx < len(company_predictions):
+                                values.append(company_predictions[pred_idx]['value'])
                     
                     if values:
                         feature_dict[f'rolling_mean_{window}'] = np.mean(values)
                     else:
-                        feature_dict[f'rolling_mean_{window}'] = company_data['營收'].iloc[-1]
+                        feature_dict[f'rolling_mean_{window}'] = company_data['營收'].mean()
                 
                 # 季節性指標
                 if config['features']['include_seasonality']:
@@ -383,7 +466,7 @@ def predict_future_quarters_for_mongo(df, model, scaler, feature_columns, config
                 
                 # 構建特徵矩陣
                 X_pred = np.array([[feature_dict[col] for col in feature_columns]])
-                X_pred = np.ascontiguousarray(X_pred)  # 確保連續記憶體
+                X_pred = np.ascontiguousarray(X_pred)
                 
                 # 標準化特徵
                 X_pred_scaled = scaler.transform(X_pred)
@@ -400,6 +483,7 @@ def predict_future_quarters_for_mongo(df, model, scaler, feature_columns, config
                     "created_at": datetime.now()
                 }
                 
+                company_predictions.append(mongo_doc)
                 future_predictions.append(mongo_doc)
                 logger.info(f"  {next_year}_Q{next_quarter}: {pred_value:.2f}")
         
@@ -477,7 +561,7 @@ def main(config_path="config.yaml"):
         # 設定日誌
         global logger
         logger = setup_logging(config)
-        logger.info("=== AutoML 營收預測 ===")
+        logger.info("=== AutoML 營收預測 (獨立公司模型版本) ===")
         logger.info("配置檔載入成功")
         
         # 連接MongoDB
@@ -492,17 +576,13 @@ def main(config_path="config.yaml"):
         logger.info("載入實際資料...")
         df = load_and_prepare_data_from_mongo(collection)
         
-        # 特徵工程
-        logger.info("進行特徵工程...")
-        df_features = create_features(df, config)
+        # 為每家公司訓練獨立模型
+        logger.info("為每家公司訓練獨立模型...")
+        company_models, training_summary = train_models_for_all_companies(df, config)
         
-        # 訓練多個模型並選擇最佳
-        logger.info("訓練多個模型並選擇最佳...")
-        best_model, scaler, best_model_name, model_scores, feature_columns = train_multiple_models(df_features, config)
-        
-        # 預測未來季度
-        logger.info(f"使用 {best_model_name} 預測未來 {config['model']['future_quarters']} 個季度...")
-        predictions = predict_future_quarters_for_mongo(df, best_model, scaler, feature_columns, config)
+        # 使用獨立模型預測未來季度
+        logger.info(f"使用獨立模型預測未來 {config['model']['future_quarters']} 個季度...")
+        predictions = predict_future_quarters_with_individual_models(df, company_models, config)
         
         # 保存預測結果到MongoDB
         logger.info("保存預測結果到MongoDB...")
@@ -511,13 +591,13 @@ def main(config_path="config.yaml"):
         # 驗證結果
         validate_predictions(collection)
         
-        logger.info(f"預測流程完成，最佳模型: {best_model_name}")
+        logger.info("預測流程完成")
         logger.info("=== AutoML 營收預測結束 ===")
         
         # 最終垃圾回收
         gc.collect()
         
-        return predictions, best_model_name, model_scores
+        return predictions, company_models, training_summary
         
     except Exception as e:
         logger.error(f"程式執行失敗: {str(e)}")
@@ -527,16 +607,18 @@ def main(config_path="config.yaml"):
 if __name__ == "__main__":
     try:
         # 執行預測
-        predictions, best_model, scores = main()
+        predictions, company_models, training_summary = main()
         
         print(f"\n=== 執行結果摘要 ===")
         print(f"總共產生了 {len(predictions)} 筆預測資料")
-        print(f"使用的最佳模型: {best_model}")
         
-        # 輸出模型比較報告
-        print(f"\n=== 模型效能比較 ===")
-        for model_name, score_info in scores.items():
-            print(f"{model_name:<18}: MSE = {score_info['mse']:.2f} (±{score_info['std']:.2f})")
+        # 輸出每家公司使用的模型
+        print(f"\n=== 各公司使用的模型 ===")
+        for company, summary in training_summary.items():
+            if summary['model_name'] != 'FAILED':
+                print(f"{company:<15}: {summary['model_name']}")
+            else:
+                print(f"{company:<15}: 訓練失敗")
         
         # 輸出預測摘要
         pred_df = pd.DataFrame(predictions)
