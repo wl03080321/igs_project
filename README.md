@@ -61,17 +61,30 @@
 
 ---
 
+### 5. RevenueExtraction
+
+* **功能**
+
+  * 從已處理的財報向量資料庫中提取總營收數據。
+  * 結果自動儲存至 MongoDB 中。
+* **資料表使用**
+
+  * 從 `financial_analysis_embeddings` 中提取總營收數據。
+  * 將總營收數據寫入 `financial_revenue`。
+
+---
+
 ## MongoDB Collections 詳細說明
 
 | Collection 名稱        | 模組 | 描述 |
 |-------------------------|------|------|
-| `financial_analysis_embeddings` | Insight | 儲存財報原文及其向量資訊與相關 metadata。 |
+| `financial_analysis_embeddings` | Insight、RevenueExtraction | 儲存財報原文及其向量資訊與相關 metadata。 |
 | `financial_analysis`            | Insight、Auto_mail | 儲存財報分析結果摘要，供 Email 發送使用。 |
 | `insight_report`                | crawl、Auto_mail | 儲存爬蟲擷取新聞原文與摘要內容，分類與關鍵字並用於推播。 |
 | `telegram_group`                | Auto_mail | Telegram 群組與話題設定資料。 |
 | `country_revenue`               | - | 儲存不同公司於各國各季度的營收資料，供財報分析使用。 |
 | `department_revenue`            | - | 儲存公司部門在各季度的營收數據。 |
-| `financial_revenue`             | AutoML | 儲存各公司在不同季度的財報數值（包含實際與預測資料）。 |
+| `financial_revenue`             | AutoML、RevenueExtraction | 儲存各公司在不同季度的財報數值（包含實際與預測資料）。 |
 | `mobile_revenue`                | - | 儲存公司在 Mobile 的營收資料。 |
 | `product_revenue`               | - | 儲存公司特定產品類別的營收資訊。 |
 | `web_revenue`                   | - | 儲存公司在 Web 的營收資料。 |
@@ -215,10 +228,11 @@
 
 ```
 igs_project/
-├── Auto_mail/       # 自動寄信與 Telegram 通知
-├── Insight/         # 財報摘要處理
-├── crawl/           # 爬蟲與新聞摘要
-├── AutoML/          # AutoML模組
-├── README.md        # 本說明文件
-└── igs_project.zip  # MongoDB資料表資料
+├── Auto_mail/                  # 自動寄信與 Telegram 通知
+├── Insight/                    # 財報摘要處理
+├── crawl/                      # 爬蟲與新聞摘要
+├── AutoML/                     # AutoML
+├── RevenueExtraction/          # 營收數據提取
+├── README.md                   # 本說明文件
+└── igs_project.zip             # MongoDB資料表資料
 ```
