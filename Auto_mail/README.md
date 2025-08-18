@@ -135,7 +135,7 @@ python telegram_pusher.py
 
 # 程式會運行
 # - 根據爬蟲資料整合"實體賭場"、"法規與政策"、"社交博弈"等主題內容進行資料整理
-# - 按照資料庫中insight_report表內資料created_at最新資料做提取
+# - 按照資料庫中insight_report表內資料created_at日期以及is_pushed做資料提取
 # - 根據主題名稱與資料庫中Telegram_topic表對應欄位"topic_relate"資料，將相同主題內容傳送至Telegram群組之主題對話
 
 ```
@@ -204,7 +204,8 @@ sender.send(
   "created_at": {
     "$date": "2025-06-20T10:33:18.727Z"
   },
-  "date": "20250522_20250529"
+  "date": "20250522_20250529",
+  "is_pushed": false
 }
 ```
 

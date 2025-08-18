@@ -10,22 +10,22 @@ class MongoDBClient:
     def __init__(self, uri: str):
         """
         初始化 MongoDB 客戶端連接
-        
+
         :param uri: MongoDB 連接字串
         """
         self.logger = Logger(name="MongoDBClientLogger")
         self.logger.info("初始化 MongoDB 客戶端")
-        
+
         try:
             self.mongo_client = pymongo.MongoClient(
                 uri,
                 serverSelectionTimeoutMS=120000,
                 connectTimeoutMS=60000,
                 socketTimeoutMS=60000,
-                server_api=ServerApi('1')
+                server_api=ServerApi("1"),
             )
             # 驗證連接是否成功
-            self.mongo_client.admin.command('ping')
+            self.mongo_client.admin.command("ping")
             self.logger.info("MongoDB 連接成功建立")
         except Exception as e:
             error_msg = f"MongoDB 連接失敗: {str(e)}"
@@ -35,7 +35,7 @@ class MongoDBClient:
     def get_db(self, db_name: str) -> Database:
         """
         取得指定的資料庫
-        
+
         :param db_name: 資料庫名稱
         :return: MongoDB 資料庫物件
         """
@@ -45,7 +45,7 @@ class MongoDBClient:
                 error_msg = "資料庫名稱 (db_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             db = self.mongo_client[db_name]
             self.logger.info(f"成功獲取資料庫: {db_name}")
             return db
@@ -53,11 +53,11 @@ class MongoDBClient:
             error_msg = f"獲取資料庫 {db_name} 時發生錯誤: {str(e)}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
-        
+
     def get_collection(self, db_name: str, collection_name: str) -> Collection:
         """
         取得指定的集合
-        
+
         :param db_name: 資料庫名稱
         :param collection_name: 集合名稱
         :return: MongoDB 集合物件
@@ -68,12 +68,12 @@ class MongoDBClient:
                 error_msg = "資料庫名稱 (db_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             if not collection_name:
                 error_msg = "集合名稱 (collection_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             collection = self.get_db(db_name)[collection_name]
             self.logger.info(f"成功獲取集合: {db_name}.{collection_name}")
             return collection
@@ -84,7 +84,7 @@ class MongoDBClient:
             error_msg = f"獲取集合 {db_name}.{collection_name} 時發生錯誤: {str(e)}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
-    
+
     def close(self) -> None:
         """
         關閉 MongoDB 連接
@@ -99,27 +99,31 @@ class MongoDBClient:
             # 關閉連接失敗一般不需要阻止程序繼續執行
             self.logger.warning("連接關閉失敗，但程序將繼續執行")
 
-    def list_fields(self, db_name: str, collection_name: str, sample_size: int = 100) -> List[str]:
+    def list_fields(
+        self, db_name: str, collection_name: str, sample_size: int = 100
+    ) -> List[str]:
         """
         檢查指定集合中的欄位名稱（取前 N 筆做統計）
-        
+
         :param db_name: 資料庫名稱
         :param collection_name: 集合名稱
         :param sample_size: 取樣數量
         :return: 欄位名稱列表
         """
-        self.logger.info(f"列出 {db_name}.{collection_name} 中的欄位，取樣數量: {sample_size}")
+        self.logger.info(
+            f"列出 {db_name}.{collection_name} 中的欄位，取樣數量: {sample_size}"
+        )
         try:
             if not db_name:
                 error_msg = "資料庫名稱 (db_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             if not collection_name:
                 error_msg = "集合名稱 (collection_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             if sample_size <= 0:
                 error_msg = "取樣數量 (sample_size) 必須大於 0"
                 self.logger.error(error_msg)
@@ -130,7 +134,7 @@ class MongoDBClient:
             cursor = collection.find({}, limit=sample_size)
             for doc in cursor:
                 fields.update(doc.keys())
-                
+
             field_list = list(fields)
             self.logger.info(f"找到 {len(field_list)} 個欄位")
             return field_list
@@ -141,12 +145,17 @@ class MongoDBClient:
             error_msg = f"獲取欄位列表時發生錯誤: {str(e)}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
-    
-    def get_distinct(self, db_name: str, collection_name: str, field: str, 
-                    filter_dict: Optional[Dict[str, Any]] = None) -> List[Any]:
+
+    def get_distinct(
+        self,
+        db_name: str,
+        collection_name: str,
+        field: str,
+        filter_dict: Optional[Dict[str, Any]] = None,
+    ) -> List[Any]:
         """
         取得指定欄位的不重複值（distinct），可加條件篩選。
-        
+
         :param db_name: 資料庫名稱
         :param collection_name: 集合名稱
         :param field: 欲查詢的欄位名稱（如 "company", "quarter"）
@@ -159,21 +168,21 @@ class MongoDBClient:
                 error_msg = "欄位名稱 (field) 不能為空。請提供欲查詢的欄位名稱。"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             if not db_name:
                 error_msg = "資料庫名稱 (db_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             if not collection_name:
                 error_msg = "集合名稱 (collection_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-            
+
             collection = self.get_collection(db_name, collection_name)
             if filter_dict is None:
                 filter_dict = {}
-                
+
             result = collection.distinct(field, filter_dict)
             self.logger.info(f"成功獲取 {len(result)} 個不重複的 {field} 值")
             return result
@@ -185,35 +194,51 @@ class MongoDBClient:
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
 
-    def get_documents(self, db_name: str, collection_name: str, 
-                     filter_dict: Optional[Dict[str, Any]] = None, 
-                     limit: int = 0) -> List[Dict[str, Any]]:
+    def get_documents(
+        self,
+        db_name: str,
+        collection_name: str,
+        filter_dict: Optional[Dict[str, Any]] = None,
+        limit: int = 0,
+    ) -> List[Dict[str, Any]]:
         """
         取得符合條件的文檔
-        
+
         :param db_name: 資料庫名稱
         :param collection_name: 集合名稱
         :param filter_dict: 篩選條件
         :param limit: 限制筆數，0 表示不限制
         :return: 文檔列表
         """
-        self.logger.info(f"從 {db_name}.{collection_name} 獲取文件，篩選條件: {filter_dict}, 限制: {limit}")
+        self.logger.info(
+            f"從 {db_name}.{collection_name} 獲取文件，篩選條件: {filter_dict}, 限制: {limit}"
+        )
         try:
-            return self.query_by_fields(db_name, collection_name, filter_dict=filter_dict, fields=None, limit=limit)
+            return self.query_by_fields(
+                db_name,
+                collection_name,
+                filter_dict=filter_dict,
+                fields=None,
+                limit=limit,
+            )
         except Exception as e:
             error_msg = f"獲取文檔時發生錯誤: {str(e)}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
-    
-    def query_by_fields(self, db_name: str, collection_name: str, 
-                       filter_dict: Optional[Dict[str, Any]] = None, 
-                       fields: Optional[List[str]] = None, 
-                       group_by: Optional[str] = None, 
-                       sort_by: Optional[Tuple[str, int]] = None,
-                       limit: int = 0) -> Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
+
+    def query_by_fields(
+        self,
+        db_name: str,
+        collection_name: str,
+        filter_dict: Optional[Dict[str, Any]] = None,
+        fields: Optional[List[str]] = None,
+        group_by: Optional[str] = None,
+        sort_by: Optional[Tuple[str, int]] = None,
+        limit: int = 0,
+    ) -> Union[List[Dict[str, Any]], Dict[str, List[Dict[str, Any]]]]:
         """
         通用查詢方法，可根據條件查詢欄位，並選擇是否群組結果。
-        
+
         :param db_name: 資料庫名稱
         :param collection_name: 集合名稱
         :param filter_dict: 查詢條件（如 {"company": "Netmarble"}）
@@ -234,36 +259,36 @@ class MongoDBClient:
             query_info += f", 分組依據: {group_by}"
         if limit:
             query_info += f", 限制: {limit} 筆"
-            
+
         self.logger.info(query_info)
-        
+
         try:
             if not db_name:
                 error_msg = "資料庫名稱 (db_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             if not collection_name:
                 error_msg = "集合名稱 (collection_name) 不能為空"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             if limit < 0:
                 error_msg = "限制筆數 (limit) 不能為負數"
                 self.logger.error(error_msg)
                 raise ValueError(error_msg)
-                
+
             collection = self.get_collection(db_name, collection_name)
-            
+
             query = {}
             if filter_dict:
                 query.update(filter_dict)
-                
+
             projection = None
             if fields:
                 projection = {field: 1 for field in fields}
                 projection["_id"] = 0  # 通常不需要 ObjectId 可省略
-            
+
             cursor = collection.find(query, projection, limit=limit)
             if sort_by:
                 field, order = sort_by
@@ -286,5 +311,184 @@ class MongoDBClient:
             raise
         except Exception as e:
             error_msg = f"查詢執行時發生錯誤: {str(e)}"
+            self.logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+    def insert(
+        self,
+        db_name: str,
+        collection_name: str,
+        data: Union[Dict[str, Any], List[Dict[str, Any]]],
+    ) -> Union[str, List[str]]:
+        """
+        新增資料（自動判斷單筆或多筆）
+
+        :param db_name: 資料庫名稱
+        :param collection_name: 集合名稱
+        :param data: 要插入的資料，可以是單筆字典或多筆字典列表
+        :return: 插入的 ObjectId（單筆）或 ObjectId 列表（多筆）
+        """
+        self.logger.info(f"新增資料到 {db_name}.{collection_name}")
+        try:
+            if not db_name:
+                error_msg = "資料庫名稱 (db_name) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not collection_name:
+                error_msg = "集合名稱 (collection_name) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not data:
+                error_msg = "資料 (data) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            collection = self.get_collection(db_name, collection_name)
+
+            # 自動判斷是單筆還是多筆
+            if isinstance(data, list):
+                # 多筆資料
+                result = collection.insert_many(data)
+                object_ids = [str(oid) for oid in result.inserted_ids]
+                self.logger.info(f"成功插入 {len(object_ids)} 筆資料")
+                return object_ids
+            else:
+                # 單筆資料
+                result = collection.insert_one(data)
+                object_id = str(result.inserted_id)
+                self.logger.info(f"成功插入 1 筆資料，ObjectId: {object_id}")
+                return object_id
+
+        except ValueError:
+            raise
+        except Exception as e:
+            error_msg = f"新增資料時發生錯誤: {str(e)}"
+            self.logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+    def update(
+        self,
+        db_name: str,
+        collection_name: str,
+        filter_dict: Dict[str, Any],
+        update_dict: Dict[str, Any],
+        update_all: bool = False,
+        upsert: bool = False,
+    ) -> Tuple[int, int]:
+        """
+        更新資料
+
+        :param db_name: 資料庫名稱
+        :param collection_name: 集合名稱
+        :param filter_dict: 篩選條件
+        :param update_dict: 更新內容，應使用 MongoDB 更新操作符（如 {"$set": {...}}）
+        :param update_all: True=更新所有符合條件的資料，False=只更新第一筆
+        :param upsert: 如果找不到符合條件的文檔，是否插入新文檔
+        :return: (匹配的文檔數, 修改的文檔數)
+        """
+        action = "所有" if update_all else "第一筆"
+        self.logger.info(f"更新 {db_name}.{collection_name} 中{action}符合條件的資料")
+        self.logger.debug(f"篩選條件: {filter_dict}, 更新內容: {update_dict}")
+
+        try:
+            if not db_name:
+                error_msg = "資料庫名稱 (db_name) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not collection_name:
+                error_msg = "集合名稱 (collection_name) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not filter_dict:
+                error_msg = "篩選條件 (filter_dict) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not update_dict:
+                error_msg = "更新內容 (update_dict) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            collection = self.get_collection(db_name, collection_name)
+
+            if update_all:
+                result = collection.update_many(filter_dict, update_dict, upsert=upsert)
+            else:
+                result = collection.update_one(filter_dict, update_dict, upsert=upsert)
+
+            matched_count = result.matched_count
+            modified_count = result.modified_count
+
+            if upsert and result.upserted_id:
+                self.logger.info(f"插入新文檔，ObjectId: {result.upserted_id}")
+            else:
+                self.logger.info(
+                    f"匹配 {matched_count} 筆，修改 {modified_count} 筆資料"
+                )
+
+            return (matched_count, modified_count)
+
+        except ValueError:
+            raise
+        except Exception as e:
+            error_msg = f"更新資料時發生錯誤: {str(e)}"
+            self.logger.error(error_msg)
+            raise RuntimeError(error_msg)
+
+    def delete(
+        self,
+        db_name: str,
+        collection_name: str,
+        filter_dict: Dict[str, Any],
+        delete_all: bool = False,
+    ) -> int:
+        """
+        刪除資料
+
+        :param db_name: 資料庫名稱
+        :param collection_name: 集合名稱
+        :param filter_dict: 篩選條件
+        :param delete_all: True=刪除所有符合條件的資料，False=只刪除第一筆
+        :return: 刪除的文檔數量
+        """
+        action = "所有" if delete_all else "第一筆"
+        self.logger.info(f"刪除 {db_name}.{collection_name} 中{action}符合條件的資料")
+        self.logger.debug(f"篩選條件: {filter_dict}")
+
+        try:
+            if not db_name:
+                error_msg = "資料庫名稱 (db_name) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not collection_name:
+                error_msg = "集合名稱 (collection_name) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            if not filter_dict:
+                error_msg = "篩選條件 (filter_dict) 不能為空"
+                self.logger.error(error_msg)
+                raise ValueError(error_msg)
+
+            collection = self.get_collection(db_name, collection_name)
+
+            if delete_all:
+                result = collection.delete_many(filter_dict)
+            else:
+                result = collection.delete_one(filter_dict)
+
+            deleted_count = result.deleted_count
+            self.logger.info(f"成功刪除 {deleted_count} 筆資料")
+            return deleted_count
+
+        except ValueError:
+            raise
+        except Exception as e:
+            error_msg = f"刪除資料時發生錯誤: {str(e)}"
             self.logger.error(error_msg)
             raise RuntimeError(error_msg)
