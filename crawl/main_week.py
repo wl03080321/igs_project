@@ -45,12 +45,18 @@ if config:
     # 從配置文件讀取
     keyword_dict = config["keywords"]
     webs = config["websites"]
-    date_after = config["date_after"]
-    date_before = config["date_before"]
     data_root = config["data_root"]
     per_page = config["per_page"]
     api_token = config.get("api_token", "")
+    
+    # 計算動態時間
+    hours_before = config.get("hours_before", 3)
+    now = datetime.datetime.now()
+    date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+    date_after = (now - datetime.timedelta(hours=hours_before)).strftime("%Y-%m-%dT%H:%M:%S")
+    
     print("已載入配置文件")
+    print(f"設定為前 {hours_before} 小時的資料")
 else:
     # 預設值
     keyword_dict = {
@@ -61,8 +67,12 @@ else:
         "平台": ["App+Store", "Google+Play"],
     }
     webs = ["https://www.igamingbusiness.com/", "https://cdcgaming.com/"]
-    date_after = "2025-07-01T00:00:00"
-    date_before = "2025-07-01T23:59:59"
+    
+    # 使用動態時間作為預設值
+    now = datetime.datetime.now()
+    date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+    date_after = (now - datetime.timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
+    
     data_root = "./data"
     per_page = 100
     api_token = ""

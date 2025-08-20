@@ -6,7 +6,7 @@ import time
 from tqdm import tqdm
 import json
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def load_config():
     """載入配置文件"""
@@ -101,16 +101,20 @@ def process_json_files():
     """Process all JSON files in the data directory based on config date range"""
     # 從配置獲取時間範圍和資料根目錄
     if config:
-        date_after = config["date_after"]
-        date_before = config["date_before"]
         data_root = config["data_root"]
+        # 計算動態時間
+        hours_before = config.get("hours_before", 3)
+        now = datetime.now()
+        date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+        date_after = (now - timedelta(hours=hours_before)).strftime("%Y-%m-%dT%H:%M:%S")
     else:
-        date_after = "2025-07-01T00:00:00"
-        date_before = "2025-07-01T23:59:59"
         data_root = "./data"
+        # 使用動態時間作為預設值
+        now = datetime.now()
+        date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+        date_after = (now - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
     
     # 根據時間範圍計算資料夾名稱
-    from datetime import datetime
     start_date = datetime.strptime(date_after, "%Y-%m-%dT%H:%M:%S")
     end_date = datetime.strptime(date_before, "%Y-%m-%dT%H:%M:%S")
     target_dir_name = f"{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
@@ -195,11 +199,16 @@ def save_to_mongodb(results):
     
     # 從配置獲取時間範圍來設定日期標識
     if config:
-        date_after = config["date_after"]
-        date_before = config["date_before"]
+        # 計算動態時間
+        hours_before = config.get("hours_before", 3)
+        now = datetime.now()
+        date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+        date_after = (now - timedelta(hours=hours_before)).strftime("%Y-%m-%dT%H:%M:%S")
     else:
-        date_after = "2025-07-01T00:00:00"
-        date_before = "2025-07-01T23:59:59"
+        # 使用動態時間作為預設值
+        now = datetime.now()
+        date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+        date_after = (now - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
     
     # 計算日期標識
     start_date = datetime.strptime(date_after, "%Y-%m-%dT%H:%M:%S")
@@ -236,7 +245,7 @@ def main():
     preview_results(results)
     
     # Ask for confirmation before saving to MongoDB
-    save_confirm = input("\n是否要將結果儲存至 MongoDB？(y/n): ")
+    save_confirm = 'y'
     if save_confirm.lower() == 'y':
         print("\n正在儲存結果到 MongoDB...")
         save_to_mongodb(results)
