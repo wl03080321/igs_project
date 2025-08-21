@@ -1,7 +1,6 @@
 {
   "api_token": "",
-  "date_after": "2025-08-01T00:00:00",
-  "date_before": "2025-08-01T23:59:59",
+  "hours_before": 24,
   "data_root": "./data",
   "per_page": 100,
   "websites": [

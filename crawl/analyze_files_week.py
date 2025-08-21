@@ -6,7 +6,7 @@ import time
 from tqdm import tqdm
 import json
 from pymongo import MongoClient
-from datetime import datetime
+from datetime import datetime, timedelta
 
 def load_config():
     """載入配置文件"""
@@ -98,14 +98,43 @@ def analyze_article_with_openai(article):
         return f"Error analyzing article: {str(e)}"
 
 def process_json_files():
-    """Process all JSON files in the data directory"""
-    data_dir = Path("./data")
-    all_files = []
+    """Process all JSON files in the data directory based on config date range"""
+    # 從配置獲取時間範圍和資料根目錄
+    if config:
+        data_root = config["data_root"]
+        # 計算動態時間
+        hours_before = config.get("hours_before", 3)
+        now = datetime.now()
+        date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+        date_after = (now - timedelta(hours=hours_before)).strftime("%Y-%m-%dT%H:%M:%S")
+    else:
+        data_root = "./data"
+        # 使用動態時間作為預設值
+        now = datetime.now()
+        date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+        date_after = (now - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
     
-    # Find all JSON files in subdirectories
-    for subdir in data_dir.iterdir():
-        if subdir.is_dir():
-            all_files.extend(list(subdir.glob("*.json")))
+    # 根據時間範圍計算資料夾名稱
+    start_date = datetime.strptime(date_after, "%Y-%m-%dT%H:%M:%S")
+    end_date = datetime.strptime(date_before, "%Y-%m-%dT%H:%M:%S")
+    target_dir_name = f"{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+    target_dir = Path(data_root) / target_dir_name
+    
+    print(f"目標資料夾: {target_dir}")
+    
+    # 檢查目標資料夾是否存在
+    if not target_dir.exists():
+        print(f"錯誤: 資料夾 {target_dir} 不存在！")
+        return {}
+    
+    # 只處理目標資料夾中的 JSON 文件
+    all_files = list(target_dir.glob("*.json"))
+    
+    if not all_files:
+        print(f"警告: 在 {target_dir} 中沒有找到 JSON 文件")
+        return {}
+    
+    print(f"找到 {len(all_files)} 個 JSON 文件")
     
     # Group files by category
     categories = {}
@@ -167,6 +196,25 @@ def preview_results(results):
 def save_to_mongodb(results):
     """Save results to MongoDB collection"""
     timestamp = datetime.now()
+    
+    # 從配置獲取時間範圍來設定日期標識
+    if config:
+        # 計算動態時間
+        hours_before = config.get("hours_before", 3)
+        now = datetime.now()
+        date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+        date_after = (now - timedelta(hours=hours_before)).strftime("%Y-%m-%dT%H:%M:%S")
+    else:
+        # 使用動態時間作為預設值
+        now = datetime.now()
+        date_before = now.strftime("%Y-%m-%dT%H:%M:%S")
+        date_after = (now - timedelta(hours=3)).strftime("%Y-%m-%dT%H:%M:%S")
+    
+    # 計算日期標識
+    start_date = datetime.strptime(date_after, "%Y-%m-%dT%H:%M:%S")
+    end_date = datetime.strptime(date_before, "%Y-%m-%dT%H:%M:%S")
+    date_identifier = f"{start_date.strftime('%Y%m%d')}_{end_date.strftime('%Y%m%d')}"
+    
     for category, files in results.items():
         for filename, articles in files.items():
             for article in articles:
@@ -180,7 +228,7 @@ def save_to_mongodb(results):
                     '摘要': article['摘要'],
                     '標籤': article['標籤'],
                     'created_at': timestamp,
-                    'date': "20250701_20250701",
+                    'date': date_identifier,
                 }
                 # Insert into MongoDB
                 try:
@@ -197,7 +245,7 @@ def main():
     preview_results(results)
     
     # Ask for confirmation before saving to MongoDB
-    save_confirm = input("\n是否要將結果儲存至 MongoDB？(y/n): ")
+    save_confirm = 'y'
     if save_confirm.lower() == 'y':
         print("\n正在儲存結果到 MongoDB...")
         save_to_mongodb(results)
