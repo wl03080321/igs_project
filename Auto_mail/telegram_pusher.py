@@ -5,6 +5,8 @@ from src.logger import Logger
 from src.mongodb_client import MongoDBClient
 from src.script import load_config
 from collections import defaultdict
+from datetime import datetime, timedelta
+
 
 logger = Logger("TelegramPusher")
 
@@ -63,7 +65,7 @@ def get_telegram_topics(mongodb_client: MongoDBClient, group_id=None):
         return {}
 
 
-def get_weekly_report_data_by_category(mongodb_client: MongoDBClient):
+def get_weekly_report_data_by_category(mongodb_client: MongoDBClient, query_hours: int):
     try:
         db_name = "igs_project"
         collection_name = "insight_report"
@@ -80,52 +82,89 @@ def get_weekly_report_data_by_category(mongodb_client: MongoDBClient):
         logger.info(f"找到 {', '.join(all_categories)} 個類別")
 
         reports_by_category = defaultdict(list)
-        category_dates = {}
 
-        # 針對每個類別，查詢其最新日期的資料
-        for category in all_categories:
-            # 獲取該類別的所有日期
-            category_all_dates = mongodb_client.get_distinct(
-                db_name,
-                collection_name,
-                "created_at",
-                filter_dict={"category": category},
-            )
+        if query_hours is not None:
+            current_time = datetime.now()
+            start_time = current_time - timedelta(hours=query_hours)
 
-            if not category_all_dates:
-                logger.warning(f"類別 {category} 未找到任何日期資料，跳過")
-                continue
-
-            # 按時間排序，找出最新日期
-            category_all_dates.sort(reverse=True)
-            category_latest_date = category_all_dates[0]
-            logger.info(f"類別 {category} 的最新日期是: {category_latest_date}")
-
-            # 記錄此類別的最新日期，用於後續格式化
-            category_dates[category] = category_latest_date
-
-            # 獲取該類別最新日期的報告
-            category_reports = mongodb_client.query_by_fields(
-                db_name,
-                collection_name,
-                filter_dict={
-                    "category": category,
-                    "created_at": category_latest_date,
-                    "$or": [{"is_pushed": False}, {"is_pushed": {"$exists": False}}],
-                },
-            )
-
-            if not category_reports:
-                logger.warning(
-                    f"類別 {category} 在日期 {category_latest_date} 沒有找到任何報告，或已經推送過。"
-                )
-                continue
-
-            # 將報告添加到該類別下
-            reports_by_category[category] = category_reports
             logger.info(
-                f"類別 {category} 在日期 {category_latest_date} 找到 {len(category_reports)} 份報告"
+                f"使用時間範圍查詢: {start_time} 到 {current_time} ({query_hours}小時)"
             )
+
+            # 針對每個類別，查詢指定時間範圍內的資料
+            for category in all_categories:
+                category_reports = mongodb_client.query_by_fields(
+                    db_name,
+                    collection_name,
+                    filter_dict={
+                        "category": category,
+                        "created_at": {"$gte": start_time, "$lte": current_time},
+                        "$or": [
+                            {"is_pushed": False},
+                            {"is_pushed": {"$exists": False}},
+                        ],
+                    },
+                )
+
+                if not category_reports:
+                    logger.warning(
+                        f"類別 {category} 在時間範圍 {start_time} 到 {current_time} 沒有找到任何報告，或已經推送過。"
+                    )
+                    continue
+
+                # 將報告添加到該類別下
+                reports_by_category[category] = category_reports
+                logger.info(
+                    f"類別 {category} 在時間範圍內找到 {len(category_reports)} 份報告"
+                )
+        else:
+            # 沒有提供hours參數，使用原本的邏輯（最新日期）
+            logger.info("未提供時間範圍參數，使用最新日期查詢")
+
+            # 針對每個類別，查詢其最新日期的資料
+            for category in all_categories:
+                # 獲取該類別的所有日期
+                category_all_dates = mongodb_client.get_distinct(
+                    db_name,
+                    collection_name,
+                    "created_at",
+                    filter_dict={"category": category},
+                )
+
+                if not category_all_dates:
+                    logger.warning(f"類別 {category} 未找到任何日期資料，跳過")
+                    continue
+
+                # 按時間排序，找出最新日期
+                category_all_dates.sort(reverse=True)
+                category_latest_date = category_all_dates[0]
+                logger.info(f"類別 {category} 的最新日期是: {category_latest_date}")
+
+                # 獲取該類別最新日期的報告
+                category_reports = mongodb_client.query_by_fields(
+                    db_name,
+                    collection_name,
+                    filter_dict={
+                        "category": category,
+                        "created_at": category_latest_date,
+                        "$or": [
+                            {"is_pushed": False},
+                            {"is_pushed": {"$exists": False}},
+                        ],
+                    },
+                )
+
+                if not category_reports:
+                    logger.warning(
+                        f"類別 {category} 在日期 {category_latest_date} 沒有找到任何報告，或已經推送過。"
+                    )
+                    continue
+
+                # 將報告添加到該類別下
+                reports_by_category[category] = category_reports
+                logger.info(
+                    f"類別 {category} 在日期 {category_latest_date} 找到 {len(category_reports)} 份報告"
+                )
 
         if not reports_by_category:
             logger.warning("所有類別都未找到有效報告")
@@ -137,7 +176,7 @@ def get_weekly_report_data_by_category(mongodb_client: MongoDBClient):
         return {}
 
 
-async def push_weekly_reports(mongodb_client: MongoDBClient, config):
+async def push_weekly_reports(mongodb_client: MongoDBClient, config, query_hours: int):
     try:
         # 先獲取所有主題設定
         all_topics = get_telegram_topics(mongodb_client)
@@ -146,7 +185,9 @@ async def push_weekly_reports(mongodb_client: MongoDBClient, config):
         else:
             logger.info(f"找到 {len(all_topics)} 個主題設定")
 
-        reports_by_category = get_weekly_report_data_by_category(mongodb_client)
+        reports_by_category = get_weekly_report_data_by_category(
+            mongodb_client, query_hours
+        )
         if not reports_by_category:
             logger.warning("未找到任何週報資料，無法進行推送")
             return False
@@ -171,81 +212,108 @@ async def push_weekly_reports(mongodb_client: MongoDBClient, config):
             topic_id = topic_info["topic_id"]
             logger.info(f"找到 {category} 類別對應的主題 {topic_id} 在群組 {group_id}")
 
-            # 獲取該類別的日期（用於後續更新is_pushed狀態）
-            category_date = reports[0].get("created_at") if reports else None
-            if not category_date:
-                logger.error(f"{category} 類別的報告缺少 created_at 欄位，跳過推送")
-                continue
+            # 按日期分組報告
+            reports_by_date = defaultdict(list)
+            for report in reports:
+                report_date = report.get("date", "N/A")
+                reports_by_date[report_date].append(report)
 
-            # 分批處理報告
-            chunks = [reports[i : i + 10] for i in range(0, len(reports), 10)]
-            chunk_sent_count = 0
+            # 按日期排序（最新的日期在前）
+            sorted_dates = sorted(reports_by_date.keys(), reverse=True)
+            logger.info(f"{category} 類別包含以下日期的資料: {', '.join(sorted_dates)}")
 
-            for i, chunk in enumerate(chunks):
-                if i == 0:
-                    message = (
-                        f"### {category} 市場週報 {chunk[0].get('date', 'N/A')}\n\n"
-                    )
-                else:
-                    message = f"### {category} 市場週報 {chunk[0].get('date', 'N/A')} (續 {i+1})\n\n"
+            all_report_ids = []  # 用於追蹤所有成功推送的報告ID
+            total_chunks_sent = 0
+            total_chunks_expected = 0
 
-                # 添加此分塊的報告內容
-                for report in chunk:
-                    link = report.get("link", "N/A")
-                    title = report.get("標題", "N/A")
-                    summary = report.get("摘要", "N/A")
+            # 為每個日期處理報告
+            for date_idx, report_date in enumerate(sorted_dates):
+                date_reports = reports_by_date[report_date]
 
-                    message += f"來源: {link}\n"
-                    message += f"標題: {title}\n"
-                    message += f"- {summary}\n\n"
+                # 分批處理該日期的報告
+                chunks = [
+                    date_reports[i : i + 10] for i in range(0, len(date_reports), 10)
+                ]
+                total_chunks_expected += len(chunks)
+                date_chunks_sent = 0
 
-                # 發送訊息
-                if await send_message(bot, group_id, message, topic_id):
-                    chunk_sent_count += 1
-                    logger.info(
-                        f"成功推送 {category} 類別週報 第 {i+1}/{len(chunks)} 區塊到群組 {group_id} 主題 {topic_id}"
-                    )
-                else:
-                    logger.error(
-                        f"推送 {category} 類別週報 第 {i+1}/{len(chunks)} 區塊到群組 {group_id} 主題 {topic_id} 失敗"
-                    )
+                for chunk_idx, chunk in enumerate(chunks):
+                    # 構建訊息標題
+                    if len(sorted_dates) == 1:
+                        # 只有一個日期
+                        if chunk_idx == 0:
+                            message = f"### {category} 市場週報 {report_date}\n\n"
+                        else:
+                            message = f"### {category} 市場週報 {report_date} (續 {chunk_idx+1})\n\n"
+                    else:
+                        # 多個日期
+                        if chunk_idx == 0:
+                            message = f"### {category} 市場週報 {report_date}\n\n"
+                        else:
+                            message = f"### {category} 市場週報 {report_date} (續 {chunk_idx+1})\n\n"
+
+                    # 添加此分塊的報告內容
+                    for report in chunk:
+                        link = report.get("link", "N/A")
+                        title = report.get("標題", "N/A")
+                        summary = report.get("摘要", "N/A")
+
+                        message += f"來源: {link}\n"
+                        message += f"標題: {title}\n"
+                        message += f"- {summary}\n\n"
+
+                    # 發送訊息
+                    if await send_message(bot, group_id, message, topic_id):
+                        date_chunks_sent += 1
+                        total_chunks_sent += 1
+                        # 收集該分塊中的報告ID
+                        chunk_report_ids = [
+                            report.get("_id") for report in chunk if report.get("_id")
+                        ]
+                        all_report_ids.extend(chunk_report_ids)
+
+                        logger.info(
+                            f"成功推送 {category} 類別 {report_date} 週報 第 {chunk_idx+1}/{len(chunks)} 區塊到群組 {group_id} 主題 {topic_id}"
+                        )
+                    else:
+                        logger.error(
+                            f"推送 {category} 類別 {report_date} 週報 第 {chunk_idx+1}/{len(chunks)} 區塊到群組 {group_id} 主題 {topic_id} 失敗"
+                        )
+
+                logger.info(
+                    f"{category} 類別 {report_date} 推送完成: {date_chunks_sent}/{len(chunks)} 個區塊成功"
+                )
 
             # 記錄推送結果並更新is_pushed狀態
-            if chunk_sent_count == len(chunks):
-                # 所有區塊都成功推送，更新該類別所有報告的is_pushed狀態
+            if total_chunks_sent == total_chunks_expected:
+                # 所有區塊都成功推送，更新所有報告的is_pushed狀態
                 try:
-                    filter_condition = {
-                        "category": category,
-                        "created_at": category_date,
-                        "$or": [
-                            {"is_pushed": False},
-                            {"is_pushed": {"$exists": False}},
-                        ],
-                    }
-                    update_data = {"$set": {"is_pushed": True}}
+                    if all_report_ids:
+                        filter_condition = {"_id": {"$in": all_report_ids}}
+                        update_data = {"$set": {"is_pushed": True}}
 
-                    matched_count, modified_count = mongodb_client.update(
-                        db_name,
-                        collection_name,
-                        filter_condition,
-                        update_data,
-                        update_all=True,
-                    )
+                        matched_count, modified_count = mongodb_client.update(
+                            db_name,
+                            collection_name,
+                            filter_condition,
+                            update_data,
+                            update_all=True,
+                        )
 
-                    logger.info(
-                        f"成功更新 {category} 類別 {category_date} 日期的 {modified_count} 筆報告為已推送狀態"
-                    )
+                        logger.info(
+                            f"成功更新 {category} 類別的 {modified_count} 筆報告為已推送狀態"
+                        )
                     success_count += 1
 
                 except Exception as e:
                     logger.error(f"更新 {category} 類別推送狀態時發生錯誤: {e}")
 
                 logger.info(
-                    f"成功推送 {category} 類別週報到群組 {group_id}（共 {chunk_sent_count}/{len(chunks)} 個區塊）"
+                    f"成功推送 {category} 類別週報到群組 {group_id}（共 {total_chunks_sent}/{total_chunks_expected} 個區塊，涵蓋 {len(sorted_dates)} 個日期）"
                 )
             else:
                 logger.error(
-                    f"推送 {category} 類別週報到群組 {group_id} 部分失敗（{chunk_sent_count}/{len(chunks)} 個區塊成功）"
+                    f"推送 {category} 類別週報到群組 {group_id} 部分失敗（{total_chunks_sent}/{total_chunks_expected} 個區塊成功）"
                 )
 
         logger.info(f"週報推送完成，共成功推送 {success_count} 個類別")
@@ -260,14 +328,14 @@ if __name__ == "__main__":
     config_path = os.path.join(base_dir, "config", "config.yaml")
     config = load_config(config_path=config_path)
     mongodb_uri = config.get("mongodb_settings", {}).get("uri", "")
-
+    query_hours = config.get("QUERY_HOURS", None)
     if not mongodb_uri:
         logger.error("MongoDB URI 未配置")
         exit(1)
 
     try:
         mongodbclient = MongoDBClient(uri=mongodb_uri)
-        asyncio.run(push_weekly_reports(mongodbclient, config))
+        asyncio.run(push_weekly_reports(mongodbclient, config, query_hours=query_hours))
     except Exception as e:
         logger.error(f"執行週報推送時發生錯誤: {e}")
     finally:

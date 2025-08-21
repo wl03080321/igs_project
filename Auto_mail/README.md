@@ -106,6 +106,10 @@ mongodb_settings:
 telegram_settings:
   token: 7xxxxxxxx3:Axxxxxxxxxxxxxxxxxxxxxxxxxxf3A
 
+# 設定抓取程式執行當下的時間，並往後推設定的前幾個小時，並計算created_at欄位時間是否符合條件，並作為Telegram推送使用。
+# 以小時為單位
+QUERY_HOURS: 48  
+
 ```
 
 tableau_dashboards.json
